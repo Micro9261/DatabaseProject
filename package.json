@@ -1,0 +1,19 @@
+{
+  "name": "database-project",
+  "version": "0.0.1",
+  "description": "Project for classes about database and websites",
+  "license": "MIT",
+  "author": "Micro9260",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "dependencies": {
+    "npm-run-all": "*"
+  },
+  "scripts": {
+    "frontend": "npm run dev --workspace=frontend",
+    "backend": "npm run dev --workspace=backend",
+    "dev": "npm-run-all --parallel frontend backend"
+  }
+}
