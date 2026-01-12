@@ -1,16 +1,18 @@
-const express = require("express");
-const bcrypt = require("bcrypt");
-const pg = require("pg-promise");
-const jwt = require("jsonwebtoken");
-const cors = require("cors");
-const dotenv = require("dotenv");
+import express from "express";
+import bcrypt from "bcrypt";
+import pg from "pg-promise";
+import jwt from "jsonwebtoken";
+import cors from "cors";
+import dotenv from "dotenv";
+
+import { initDatabase, deleteDatabase } from "./Database/db.js";
 
 //Routers
-const userRouter = require("./Router/user");
-const projectRouter = require("./Router/project");
-const projectsRouter = require("./Router/projects");
-const threadRouter = require("./Router/thread");
-const threadsRouter = require("./Router/threads");
+import userRouter from "./Router/user.js";
+import projectRouter from "./Router/project.js";
+import projectsRouter from "./Router/projects.js";
+import threadRouter from "./Router/thread.js";
+import threadsRouter from "./Router/threads.js";
 
 dotenv.config();
 const app = express();
@@ -25,8 +27,22 @@ const db = pgp({
   database: process.env.DB_NAME,
 });
 
+//Database operations
+const schema = process.env.SCHEMA;
+
+const deleteDb = process.env.DELETE_DB;
+const loadTestData = process.env.LOAD_TEST_DATA;
+
+if (deleteDb) {
+  await deleteDatabase(db, schema);
+  await initDatabase(db, schema, loadTestData);
+} else {
+  await initDatabase(db, schema, loadTestData);
+}
+
 //Locals
-app.locals.schema_query = `SET search_path TO ${process.env.SCHEMA}`;
+const searchPath = `SET search_path TO ${process.env.SCHEMA}`;
+app.locals.schema_query = searchPath;
 app.locals.db = db;
 app.locals.jwt = jwt;
 app.locals.bcrypt = bcrypt;
@@ -48,29 +64,3 @@ app.get("/", (req, res) => {
 app.listen(port, () => {
   console.log(`Server listening at http://localhost:${port}`);
 });
-
-// app.post("/register", async (req, res) => {
-//   try {
-//     const { id, username } = req.body;
-//     console.log(`received id: ${id}, username: ${username}`);
-//     const result_path = await pool.query("SET search_path  TO project");
-//     const result = await pool.query(
-//       "INSERT INTO users (name) VALUES ($1) RETURNING *",
-//       [username]
-//     );
-//     // console.log(result);
-
-//     // const result_id = await pool.query(
-//     //   "SELECT * FROM users WHERE name = ($1)",
-//     //   [username]
-//     // );
-
-//     // console.log(result_id);
-//     console.log(`return id: ${result.rows[0].user_id}`);
-
-//     res.status(201).json({ id: result.rows[0].user_id });
-//   } catch (error) {
-//     console.error(error.message);
-//     res.status(500).send("Server Error");
-//   }
-// });

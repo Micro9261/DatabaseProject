@@ -1,4 +1,4 @@
-const express = require("express");
+import express from "express";
 const router = express.Router();
 
 //******************************** GET ***********************/
@@ -46,6 +46,27 @@ router.get("/:thread_id", async (req, res) => {
 
 //******************************** POST ***********************/
 
+router.get("/comment/", async (req, res) => {
+  try {
+    const db = req.app.locals.db;
+
+    await db.none(req.app.locals.schema_query);
+    const sqlQuery =
+      "SELECT * FROM add_thread_comment(${title}, ${author}, ${content})";
+    const sqlParams = {
+      title,
+      author,
+      content,
+    };
+    const thread_comments = await db.any(sqlQuery, sqlParams);
+
+    res.json(thread_comments);
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ error: "Database error" });
+  }
+});
+
 router.post("/", async (req, res) => {
   try {
     const db = req.app.locals.db;
@@ -69,4 +90,6 @@ router.post("/", async (req, res) => {
   }
 });
 
-module.exports = router;
+/****************************** DELETE *************************************/
+
+export default router;

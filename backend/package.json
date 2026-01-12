@@ -1,6 +1,7 @@
 {
   "name": "backend",
   "version": "0.0.1",
+  "type": "module",
   "description": "Backend server with node.js",
   "license": "MIT",
   "author": "Micro9260",
@@ -9,11 +10,12 @@
     "dev": "node index.js"
   },
   "dependencies": {
-    "pg": "*",
     "pg-cursor": "*",
     "express": "*",
     "jsonwebtoken": "*",
     "bcrypt": "*",
-    "dotenv": "*"
+    "dotenv": "*",
+    "cors": "*",
+    "pg-promise": "*"
   }
 }
