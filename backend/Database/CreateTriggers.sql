@@ -39,3 +39,9 @@ CREATE OR REPLACE TRIGGER trg_prepare_user
     ON users
     FOR EACH ROW
 EXECUTE FUNCTION prepare_on_insert_users();
+
+CREATE OR REPLACE TRIGGER trg_prepare_tag
+    BEFORE INSERT
+    ON tags
+    FOR EACH ROW
+EXECUTE FUNCTION prepare_on_insert_tag();

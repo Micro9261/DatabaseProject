@@ -30,7 +30,10 @@ VALUES ('A0001', 'Email not valid!'),
        ('A0027', 'Project does not exist!'),
        ('A0028', 'Thread does not exist!'),
        ('A0029', 'Comment does not exist!'),
-       ('A0030', 'Comment needs content!');
+       ('A0030', 'Comment needs content!'),
+       ('A0031', 'Bad tag!'),
+       ('A0032', 'Tag name can not be empty!'),
+       ('A0033', 'Bad year value!');
 
 --Reports
 
@@ -59,6 +62,3 @@ INSERT INTO roles (name)
 VALUES ('user'),
        ('admin'),
        ('moderator');
-
-INSERT INTO tokens (token)
-VALUES ('Not specified');
