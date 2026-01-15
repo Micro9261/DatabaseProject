@@ -1,18 +1,17 @@
 import express from "express";
-import bcrypt from "bcrypt";
 import pg from "pg-promise";
-import jwt from "jsonwebtoken";
 import cors from "cors";
 import dotenv from "dotenv";
+import bodyParser from "body-parser";
+import cookieParser from "cookie-parser";
 
 import { initDatabase, deleteDatabase } from "./Database/db.js";
 
 //Routers
-import userRouter from "./Router/user.js";
-import projectRouter from "./Router/project.js";
-import projectsRouter from "./Router/projects.js";
-import threadRouter from "./Router/thread.js";
-import threadsRouter from "./Router/threads.js";
+import usersRouter from "./Router/users/users.js";
+import projectsRouter from "./Router/projects/projects.js";
+import threadsRouter from "./Router/threads/threads.js";
+import reportsRouter from "./Router/reports/report.js";
 
 dotenv.config();
 const app = express();
@@ -44,18 +43,22 @@ if (deleteDb) {
 const searchPath = `SET search_path TO ${process.env.SCHEMA}`;
 app.locals.schema_query = searchPath;
 app.locals.db = db;
-app.locals.jwt = jwt;
-app.locals.bcrypt = bcrypt;
 
 //Express config
-app.use(cors());
-app.use(express.json());
+app.use(cookieParser());
+app.use(
+  cors({
+    origin: ["http://localhost:3000"],
+    credentials: true,
+  })
+);
+app.use(bodyParser.json());
 app.use(express.urlencoded({ extended: true }));
-app.use("/api/User", userRouter);
-app.use("/api/Project", projectRouter);
-app.use("/api/Projects", projectsRouter);
-app.use("/api/Thread", threadRouter);
+
+app.use("/api/users", usersRouter);
+app.use("/api/projects", projectsRouter);
 app.use("/api/Threads", threadsRouter);
+app.use("/api/reports", reportsRouter);
 
 app.get("/", (req, res) => {
   res.send("Hello World from Express!");

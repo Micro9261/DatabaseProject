@@ -12,10 +12,13 @@
   "dependencies": {
     "pg-cursor": "*",
     "express": "*",
+    "express-rate-limit": "*",
+    "body-parser": "*",
     "jsonwebtoken": "*",
     "bcrypt": "*",
     "dotenv": "*",
     "cors": "*",
-    "pg-promise": "*"
+    "pg-promise": "*",
+    "cookie-parser": "*"
   }
 }
