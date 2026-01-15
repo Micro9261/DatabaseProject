@@ -4,7 +4,7 @@ import {
   createPasshash,
   accessTokenGen,
   refreshTokenGen,
-} from "../../Auth/auth.js";
+} from "../../Middleware/auth.js";
 
 const router = express.Router();
 

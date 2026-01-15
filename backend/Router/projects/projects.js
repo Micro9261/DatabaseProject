@@ -1,5 +1,6 @@
 import express from "express";
-import { authenticateJWT } from "../../Auth/auth.js";
+import { authenticateJWT } from "../../Middleware/auth.js";
+import { intValidator } from "../../Middleware/validators.js";
 
 const router = express.Router({ mergeParams: true });
 router.use(authenticateJWT);
@@ -38,6 +39,8 @@ router.post("/", async (req, res) => {
 });
 
 /*******************  /projects/:projectId *********************/
+
+router.param("projectId", intValidator);
 
 router.get("/:projectId", async (req, res) => {
   try {

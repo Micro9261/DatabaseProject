@@ -1,5 +1,5 @@
 import express from "express";
-import { accessTokenGen, verifyRefreshToken } from "../../Auth/auth.js";
+import { accessTokenGen, verifyRefreshToken } from "../../Middleware/auth.js";
 
 const router = express.Router();
 

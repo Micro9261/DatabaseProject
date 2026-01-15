@@ -1,4 +1,5 @@
 import express from "express";
+import { intValidator } from "../../Middleware/validators.js";
 
 const router = express.Router({ mergeParams: true });
 
@@ -48,6 +49,8 @@ router.delete("/", async (req, res) => {
 });
 
 /*******************  /threads/:threadId/comments/:threadId *********************/
+
+router.param("commentId", intValidator);
 
 router.get("/:commentId", async (req, res) => {
   try {
