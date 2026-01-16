@@ -1,0 +1,87 @@
+.comment {
+  border: 2px solid #000;
+  border-radius: 12px;
+
+  /* Size constraints */
+  min-width: 200px;
+  max-width: 400px;
+  min-height: 120px;
+  max-height: 250px;
+  margin-left: 40px;
+
+  padding: 12px;
+  background-color: #fff;
+
+  /* Layout */
+  display: block;
+  flex-direction: column;
+  justify-content: space-between;
+
+  box-sizing: border-box;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.author {
+  font-weight: bold;
+  margin: 0;
+}
+
+.date {
+  font-size: 0.8rem;
+  color: #666;
+  margin: 0;
+}
+
+.modify {
+  border: 1px solid #000;
+  background: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Content */
+.content {
+  width: 100%;
+  margin: 10px 0;
+  padding: 8px;
+
+  border: 1px solid #000;
+  border-radius: 8px;
+  background-color: #f5f5f5;
+
+  /* Prevent resize breaking layout */
+  box-sizing: border-box;
+
+  /* Handle overflow if text is long */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Footer */
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  align-items: center;
+}
+
+.footer button {
+  border: 1px solid #000;
+  background: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.footer span {
+  min-width: 20px;
+  text-align: center;
+}
