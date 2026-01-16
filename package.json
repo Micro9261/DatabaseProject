@@ -9,7 +9,8 @@
     "backend"
   ],
   "dependencies": {
-    "npm-run-all": "*"
+    "npm-run-all": "*",
+    "react-router-dom": "^7.12.0"
   },
   "scripts": {
     "frontend": "npm run dev --workspace=frontend",

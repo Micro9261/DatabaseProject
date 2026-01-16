@@ -12,16 +12,36 @@ router.post("/", async (req, res) => {
 
   try {
     const db = req.app.locals.db;
+
+    await db.tx(async (t) => {
+      t.none(req.app.locals.schema_query);
+
+      const sql =
+        "SELECT * FROM tokens t INNER JOIN users u ON u.token_id = t.id WHERE u.login = ${login}";
+      const sqlParams = { login };
+      const result = await t.oneOrNone(sql, sqlParams);
+      result;
+      if (!result) {
+        return res
+          .status(401)
+          .json({ message: "Authentication header required" });
+      }
+    });
+
     try {
       await db.tx(async () => {
         await db.none(req.app.locals.schema_query);
 
         const sql = "SELECT * FROM delete_user_token(${login})";
         const sqlParams = { login };
-        await db.oneOrNone(sql, sqlParams);
+        const result = await db.oneOrNone(sql, sqlParams);
+        const { delete_user_token } = result;
+        if (!delete_user_token) {
+          throw new Error("Token not found");
+        }
       });
     } catch (err) {
-      console.log(err);
+      return res.status(401).json({ message: "Invalid credentials!" });
     }
 
     res

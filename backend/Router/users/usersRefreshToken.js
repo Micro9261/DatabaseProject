@@ -6,12 +6,13 @@ const router = express.Router();
 /************* /users/refresh-token ********************/
 
 router.post("/", async (req, res) => {
-  const { refresh_token } = req.cookies;
-  const refreshToken = refresh_token.split(" ")[1];
-
-  if (!refreshToken) {
+  const cookies = req.cookies;
+  if (!cookies.refresh_token) {
     return res.status(401).json({ message: "Refresh token required" });
   }
+  const { refresh_token } = cookies;
+  const refreshToken = refresh_token.split(" ")[1];
+
   try {
     const db = req.app.locals.db;
     const { login, role } = verifyRefreshToken(refreshToken);
@@ -25,6 +26,7 @@ router.post("/", async (req, res) => {
         dbRefreshToken = await db.oneOrNone(sql, sqlParams);
       });
     } catch (err) {
+      console.log(err);
       return res
         .status(401)
         .json({ error: "Invalid or expired refresh token" });

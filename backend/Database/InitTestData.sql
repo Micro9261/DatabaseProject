@@ -1,17 +1,17 @@
-DO
-$add_users$
-    BEGIN
-        PERFORM register_user('Pawel', 'Glowacki', 'AdminTest', 'test1@gmail.com', 'male', 'admin', '1234');
-        PERFORM register_user('Kacper', 'Marmaj', 'ModeratorTest', 'test2@gmail.com', 'male', 'moderator', '1234');
-        PERFORM register_user('Piotr', 'Nowak', 'UserTest', 'test3@gmail.com', 'male', 'user', '1234');
-        PERFORM register_user('Jacek', 'Pietruszka', 'Pietruszka1', 'test4@gmail.com', 'male', 'user', '1234');
-        PERFORM register_user('marek', 'staszyński', 'Staszeczek', 'test5@gmail.com', 'male', 'user', '1234');
-        PERFORM register_user('kuba', 'wrocek', 'wrocławskiRok', 'test6@gmail.com', 'male', 'user', '1234');
-        PERFORM register_user('Mikołaj', 'warta', 'mikoWart', 'test7@gmail.com', 'male', 'user', '1234');
-        PERFORM register_user('Justyna', 'bomba', 'Justice', 'test8@gmail.com', 'female', 'user', '1234');
-        PERFORM register_user('Anastazja', 'wieczorek', 'AnWek', 'test9@gmail.com', 'female', 'user', '1234');
-    end;
-$add_users$;
+-- DO
+-- $add_users$
+--     BEGIN
+--         PERFORM user_create('Pawel', 'Glowacki', 'AdminTest', 'test1@gmail.com', 'male', 'admin', '1234');
+--         PERFORM user_create('Kacper', 'Marmaj', 'ModeratorTest', 'test2@gmail.com', 'male', 'moderator', '1234');
+--         PERFORM user_create('Piotr', 'Nowak', 'UserTest', 'test3@gmail.com', 'male', 'user', '1234');
+--         PERFORM user_create('Jacek', 'Pietruszka', 'Pietruszka1', 'test4@gmail.com', 'male', 'user', '1234');
+--         PERFORM user_create('marek', 'staszyński', 'Staszeczek', 'test5@gmail.com', 'male', 'user', '1234');
+--         PERFORM user_create('kuba', 'wrocek', 'wrocławskiRok', 'test6@gmail.com', 'male', 'user', '1234');
+--         PERFORM user_create('Mikołaj', 'warta', 'mikoWart', 'test7@gmail.com', 'male', 'user', '1234');
+--         PERFORM user_create('Justyna', 'bomba', 'Justice', 'test8@gmail.com', 'female', 'user', '1234');
+--         PERFORM user_create('Anastazja', 'wieczorek', 'AnWek', 'test9@gmail.com', 'female', 'user', '1234');
+--     end;
+-- $add_users$;
 
 DO
 $add_projects$

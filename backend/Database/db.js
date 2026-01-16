@@ -1,6 +1,91 @@
 import fs from "fs";
 import path from "path";
 import pgp from "pg-promise";
+import bcrypt from "bcrypt";
+
+const users = [
+  {
+    name: "Pawel",
+    surname: "Glowacki",
+    login: "AdminTest",
+    email: "test1@gmail.com",
+    gender: "male",
+    role: "admin",
+    passHash: "1234",
+  },
+  {
+    name: "Kacper",
+    surname: "Marmaj",
+    login: "ModeratorTest",
+    email: "test2@gmail.com",
+    gender: "male",
+    role: "moderator",
+    passHash: "1234",
+  },
+  {
+    name: "Piotr",
+    surname: "Nowak",
+    login: "UserTest",
+    email: "test3@gmail.com",
+    gender: "male",
+    role: "user",
+    passHash: "1234",
+  },
+  {
+    name: "Jacek",
+    surname: "Pietruszka",
+    login: "Pietruszka1",
+    email: "test4@gmail.com",
+    gender: "male",
+    role: "user",
+    passHash: "1234",
+  },
+  {
+    name: "marek",
+    surname: "staszyński",
+    login: "Staszeczek",
+    email: "test5@gmail.com",
+    gender: "male",
+    role: "user",
+    passHash: "1234",
+  },
+  {
+    name: "kuba",
+    surname: "wrocek",
+    login: "wrocławskiRok",
+    email: "test6@gmail.com",
+    gender: "male",
+    role: "user",
+    passHash: "1234",
+  },
+  {
+    name: "Mikołaj",
+    surname: "warta",
+    login: "mikoWart",
+    email: "test7@gmail.com",
+    gender: "male",
+    role: "user",
+    passHash: "1234",
+  },
+  {
+    name: "Justyna",
+    surname: "bomba",
+    login: "Justice",
+    email: "test8@gmail.com",
+    gender: "female",
+    role: "user",
+    passHash: "1234",
+  },
+  {
+    name: "Anastazja",
+    surname: "wieczorek",
+    login: "AnWek",
+    email: "test9@gmail.com",
+    gender: "female",
+    role: "user",
+    passHash: "1234",
+  },
+];
 
 export async function initDatabase(db, schema, loadTestData) {
   const createTableSqlFile = path.join(
@@ -19,6 +104,10 @@ export async function initDatabase(db, schema, loadTestData) {
     process.cwd(),
     "Database\\CreateViews.sql"
   );
+  const createFunctionsAfterViewsSqlFile = path.join(
+    process.cwd(),
+    "Database\\CreateFunctionsAfterViews.sql"
+  );
   const loadDataSqlFile = path.join(process.cwd(), "Database\\LoadData.sql");
 
   const executeSql = [
@@ -26,17 +115,9 @@ export async function initDatabase(db, schema, loadTestData) {
     createFunctionsSqlFile,
     createTriggerSqlFile,
     createViewSqlFile,
+    createFunctionsAfterViewsSqlFile,
     loadDataSqlFile,
   ];
-
-  if (loadTestData) {
-    const initTestDataSqlFile = path.join(
-      process.cwd(),
-      "Database\\InitTestData.sql"
-    );
-
-    executeSql.push(initTestDataSqlFile);
-  }
 
   try {
     const createSchema = "CREATE SCHEMA IF NOT EXISTS $1:name";
@@ -50,9 +131,54 @@ export async function initDatabase(db, schema, loadTestData) {
       const schemaParams = [schema];
       const sqlQueryPath = pgp.as.format(searchPath, schemaParams);
       await db.tx(async (t) => {
-        await db.any(sqlQueryPath);
-        const res = await db.any(sql);
+        await t.any(sqlQueryPath);
+        const res = await t.any(sql);
       });
+    }
+
+    if (loadTestData) {
+      const initTestDataSqlFile = path.join(
+        process.cwd(),
+        "Database\\InitTestData.sql"
+      );
+
+      const salt = Number(process.env.SALT);
+      let sqlParamList = [];
+      const passHash = await bcrypt.hash(users[0].passHash, Number(salt));
+      for (let i = 0; i < users.length; i++) {
+        sqlParamList.push({ ...users[i], passHash });
+      }
+      await db.tx(async (t) => {
+        const searchPath = `SET search_path TO $1:name`;
+        await t.none(searchPath, [schema]);
+
+        const sql = "SELECT * FROM user_create($1, $2, $3, $4, $5, $6, $7)";
+
+        for (let i = 0; i < sqlParamList.length; i++) {
+          const p = sqlParamList[i];
+          const values = [
+            p.name,
+            p.surname,
+            p.login,
+            p.email,
+            p.gender,
+            p.role,
+            p.passHash,
+          ];
+          await t.any(sql, values);
+        }
+      });
+
+      const sql = fs.readFileSync(initTestDataSqlFile, "utf-8");
+      const searchPath = `SET search_path TO $1:name`;
+      const schemaParams = [schema];
+      const sqlQueryPath = pgp.as.format(searchPath, schemaParams);
+      db.tx(async (t) => {
+        t.any(sqlQueryPath);
+        t.any(sql);
+      });
+
+      console.log("DataLoaded!");
     }
   } catch (err) {
     console.log(err);

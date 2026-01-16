@@ -17,7 +17,9 @@ export const authenticateJWT = (req, res, next) => {
     const payload = verifyAccessToken(token);
     req.user = payload;
     console.log("Authorized!");
-  } catch (error) {}
+  } catch (error) {
+    console.log("Not Authorized!");
+  }
   next();
 };
 
@@ -54,8 +56,14 @@ export const verifyRefreshToken = (token) => {
 };
 
 export const createPasshash = async (password) => {
-  // const salt = process.env.SALT;
-  // const passHash = await bcrypt.hash(password, salt);
-  // return passHash;
-  return "1234";
+  const salt = Number(process.env.SALT);
+  const passHash = await bcrypt.hash(password, salt);
+  return passHash;
+  // return "1234";
+};
+
+export const checkPassword = async (password, hash) => {
+  const passHash = await bcrypt.compare(password, hash);
+  return passHash;
+  // return "1234";
 };

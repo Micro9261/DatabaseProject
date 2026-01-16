@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS error_codes
 (
-    id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id            SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     error_code    TEXT NOT NULL UNIQUE,
     error_message TEXT NOT NULL DEFAULT 'Not specified!' UNIQUE
 );
@@ -10,40 +10,43 @@ CREATE TABLE IF NOT EXISTS tokens
     id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     token       TEXT NOT NULL DEFAULT 'Not specified',
     create_time TIMESTAMP     DEFAULT now(),
-    expire_time BIGINT        DEFAULT 0
+    expire_time TIMESTAMP        DEFAULT now()
 );
 
 CREATE TABLE IF NOT EXISTS roles
 (
-    id   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id   SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name TEXT NOT NULL DEFAULT 'Unknown' UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS role_permissions
 (
     id      BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    role_id BIGINT NOT NULL REFERENCES roles (id),
+    role_id SMALLINT NOT NULL REFERENCES roles (id),
     name    TEXT   NOT NULL DEFAULT 'Not specified'
 );
 
 CREATE TABLE IF NOT EXISTS genders
 (
-    id   BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id   SMALLINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     name TEXT NOT NULL DEFAULT 'Not specified'
 );
 
 CREATE TABLE IF NOT EXISTS users
 (
     id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    role_id     BIGINT NOT NULL REFERENCES roles (id),
+    role_id     SMALLINT NOT NULL REFERENCES roles (id),
     token_id    BIGINT          DEFAULT NULL REFERENCES tokens (id),
     name        TEXT   NOT NULL DEFAULT 'Unknown',
     surname     TEXT   NOT NULL DEFAULT 'Unknown',
-    gender_id   BIGINT NOT NULL REFERENCES genders (id),
-    nickname    TEXT   NOT NULL DEFAULT 'No nickname' UNIQUE,
+    gender_id   SMALLINT NOT NULL REFERENCES genders (id),
+    login    TEXT   NOT NULL DEFAULT 'No login' UNIQUE,
     email       TEXT   NOT NULL DEFAULT 'Unknown' UNIQUE,
     pass_hash   TEXT   NOT NULL DEFAULT 'Unknown',
-    create_date TIMESTAMP       DEFAULT now()
+    blocked BOOLEAN DEFAULT FALSE,
+    create_date TIMESTAMP       DEFAULT now(),
+    modify_date TIMESTAMP DEFAULT NULL,
+    delete_date TIMESTAMP DEFAULT NULL
 );
 
 CREATE TABLE IF NOT EXISTS projects
@@ -53,7 +56,9 @@ CREATE TABLE IF NOT EXISTS projects
     title       TEXT NOT NULL DEFAULT 'Unknown',
     content     TEXT NOT NULL DEFAULT 'Empty',
     create_date TIMESTAMP     DEFAULT now(),
-    views       INT           DEFAULT 0,
+    modify_date TIMESTAMP DEFAULT NULL,
+    delete_date TIMESTAMP DEFAULT NULL,
+    views       BIGINT           DEFAULT 0,
 
     CONSTRAINT fk_project_author
         FOREIGN KEY (author_id)
@@ -75,6 +80,8 @@ CREATE TABLE IF NOT EXISTS project_comment
     author_id   BIGINT,
     content     TEXT   NOT NULL DEFAULT 'Empty',
     create_date TIMESTAMP       DEFAULT now(),
+    modify_date TIMESTAMP DEFAULT NULL,
+    delete_date TIMESTAMP DEFAULT NULL,
 
     CONSTRAINT fk_project_comment_parent
         FOREIGN KEY (parent_id)
@@ -99,7 +106,9 @@ CREATE TABLE IF NOT EXISTS threads
     title       TEXT NOT NULL DEFAULT 'Unknown',
     content     TEXT NOT NULL DEFAULT 'Empty',
     create_date TIMESTAMP     DEFAULT now(),
-    views       INT           DEFAULT 0,
+    modify_date TIMESTAMP DEFAULT NULL,
+    delete_date TIMESTAMP DEFAULT NULL,
+    views       BIGINT           DEFAULT 0,
 
     CONSTRAINT fk_thread_author
         FOREIGN KEY (author_id)
@@ -115,6 +124,8 @@ CREATE TABLE IF NOT EXISTS thread_comment
     author_id   BIGINT,
     content     TEXT   NOT NULL DEFAULT 'Empty',
     create_date TIMESTAMP       DEFAULT now(),
+    modify_date TIMESTAMP DEFAULT NULL,
+    delete_date TIMESTAMP DEFAULT NULL,
 
     CONSTRAINT fk_thread_comment_parent
         FOREIGN KEY (parent_id)
@@ -153,42 +164,73 @@ CREATE TABLE IF NOT EXISTS report_notifications
     type_id         BIGINT NOT NULL REFERENCES report_type (id),
     content         TEXT   NOT NULL DEFAULT 'Empty',
     report_date     TIMESTAMP       DEFAULT now(),
+    delete_date TIMESTAMP DEFAULT NULL,
 
     CONSTRAINT fk_report_notifications_author
         FOREIGN KEY (author_id)
             REFERENCES users (id)
-            ON DELETE CASCADE
+            ON DELETE SET NULL
 );
 
-CREATE TABLE IF NOT EXISTS best_threads
-(
-    id        BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    thread_id BIGINT NOT NULL,
-    year      INT CHECK ( year > 2022 ),
 
-    CONSTRAINT fk_best_threads_thread
-        FOREIGN KEY (thread_id)
-            REFERENCES threads (id)
-            ON DELETE CASCADE
+CREATE TABLE IF NOT EXISTS project_views (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    project_id BIGINT NOT NULL REFERENCES projects (id),
+    user_id BIGINT DEFAULT NULL,
+    create_date TIMESTAMP DEFAULT now(),
+
+    CONSTRAINT fk_project_views_user
+        FOREIGN KEY (user_id)
+        REFERENCES users (id)
+        ON DELETE SET NULL
 );
 
-CREATE TABLE IF NOT EXISTS best_projects
-(
-    id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    project_id BIGINT NOT NULL,
-    year       INT CHECK ( year > 2022 ),
+CREATE TABLE IF NOT EXISTS thread_views (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    thread_id BIGINT NOT NULL REFERENCES threads (id),
+    user_id BIGINT DEFAULT NULL,
+    create_date TIMESTAMP DEFAULT now(),
 
-    CONSTRAINT fk_best_projects_projects
-        FOREIGN KEY (project_id)
-            REFERENCES projects (id)
-            ON DELETE CASCADE
+    CONSTRAINT fk_project_views_user
+        FOREIGN KEY (user_id)
+        REFERENCES users (id)
+        ON DELETE SET NULL
 );
+--To change
+
+-- CREATE TABLE IF NOT EXISTS best_threads
+-- (
+--     id        BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+--     thread_id BIGINT NOT NULL,
+--     year      INT CHECK ( year > 2022 ),
+--
+--     CONSTRAINT fk_best_threads_thread
+--         FOREIGN KEY (thread_id)
+--             REFERENCES threads (id)
+--             ON DELETE CASCADE
+-- );
+--
+-- CREATE TABLE IF NOT EXISTS best_projects
+-- (
+--     id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+--     project_id BIGINT NOT NULL,
+--     year       INT CHECK ( year > 2022 ),
+--
+--     CONSTRAINT fk_best_projects_projects
+--         FOREIGN KEY (project_id)
+--             REFERENCES projects (id)
+--             ON DELETE CASCADE
+-- );
+
+--TO change
 
 CREATE TABLE IF NOT EXISTS relation_tag_project
 (
     id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     project_id BIGINT NOT NULL,
     tag_id     BIGINT NOT NULL REFERENCES tags (id),
+    create_date TIMESTAMP DEFAULT now(),
+    delete_date TIMESTAMP DEFAULT NULL,
 
     CONSTRAINT fk_relation_tag_project_projects
         FOREIGN KEY (project_id)
@@ -201,6 +243,8 @@ CREATE TABLE IF NOT EXISTS relation_tag_thread
     id        BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     thread_id BIGINT NOT NULL,
     tag_id    BIGINT NOT NULL REFERENCES tags (id),
+    create_date TIMESTAMP DEFAULT now(),
+    delete_date TIMESTAMP DEFAULT NULL,
 
     CONSTRAINT fk_relation_tag_thread_projects
         FOREIGN KEY (thread_id)
@@ -214,6 +258,8 @@ CREATE TABLE IF NOT EXISTS relation_project_like
     id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_id    BIGINT NOT NULL,
     project_id BIGINT NOT NULL,
+    create_date TIMESTAMP DEFAULT now(),
+    delete_date TIMESTAMP DEFAULT NULL,
 
     CONSTRAINT fk_relation_project_like_project
         FOREIGN KEY (project_id)
@@ -231,6 +277,8 @@ CREATE TABLE IF NOT EXISTS relation_project_save
     id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_id    BIGINT NOT NULL,
     project_id BIGINT NOT NULL,
+    create_date TIMESTAMP DEFAULT now(),
+    delete_date TIMESTAMP DEFAULT NULL,
 
     CONSTRAINT fk_relation_project_like_project
         FOREIGN KEY (project_id)
@@ -248,6 +296,8 @@ CREATE TABLE IF NOT EXISTS relation_project_comment_like
     id                 BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_id            BIGINT NOT NULL,
     project_comment_id BIGINT NOT NULL,
+    create_date TIMESTAMP DEFAULT now(),
+    delete_date TIMESTAMP DEFAULT NULL,
 
     CONSTRAINT fk_relation_project_comment_like_project
         FOREIGN KEY (project_comment_id)
@@ -265,6 +315,8 @@ CREATE TABLE IF NOT EXISTS relation_project_comment_interest
     id                 BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_id            BIGINT NOT NULL,
     project_comment_id BIGINT NOT NULL,
+    create_date TIMESTAMP DEFAULT now(),
+    delete_date TIMESTAMP DEFAULT NULL,
 
     CONSTRAINT fk_relation_project_comment_like_project
         FOREIGN KEY (project_comment_id)
@@ -282,6 +334,8 @@ CREATE TABLE IF NOT EXISTS relation_thread_like
     id        BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_id   BIGINT NOT NULL,
     thread_id BIGINT NOT NULL,
+    create_date TIMESTAMP DEFAULT now(),
+    delete_date TIMESTAMP DEFAULT NULL,
 
     CONSTRAINT fk_relation_project_like_project
         FOREIGN KEY (thread_id)
@@ -299,6 +353,8 @@ CREATE TABLE IF NOT EXISTS relation_thread_save
     id        BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_id   BIGINT NOT NULL,
     thread_id BIGINT NOT NULL,
+    create_date TIMESTAMP DEFAULT now(),
+    delete_date TIMESTAMP DEFAULT NULL,
 
     CONSTRAINT fk_relation_thread_save_project
         FOREIGN KEY (thread_id)
@@ -316,6 +372,8 @@ CREATE TABLE IF NOT EXISTS relation_thread_comment_like
     id                BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_id           BIGINT NOT NULL,
     thread_comment_id BIGINT NOT NULL,
+    create_date TIMESTAMP DEFAULT now(),
+    delete_date TIMESTAMP DEFAULT NULL,
 
     CONSTRAINT fk_relation_thread_comment_like_project
         FOREIGN KEY (thread_comment_id)
@@ -333,6 +391,8 @@ CREATE TABLE IF NOT EXISTS relation_thread_comment_interest
     id                BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     user_id           BIGINT NOT NULL,
     thread_comment_id BIGINT NOT NULL,
+    create_date TIMESTAMP DEFAULT now(),
+    delete_date TIMESTAMP DEFAULT NULL,
 
     CONSTRAINT fk_relation_thread_comment_interest_project
         FOREIGN KEY (thread_comment_id)

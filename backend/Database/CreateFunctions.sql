@@ -263,7 +263,7 @@ BEGIN
     SELECT u.id
     INTO d_author_id
     FROM users u
-    WHERE u.nickname = p_author;
+    WHERE u.login = p_author;
 
     IF d_author_id IS NULL THEN
         PERFORM raise_custom_error('A0019');
@@ -311,7 +311,7 @@ BEGIN
     SELECT u.id
     INTO d_author_id
     FROM users u
-    WHERE u.nickname = p_author;
+    WHERE u.login = p_author;
 
     IF d_author_id IS NULL THEN
         PERFORM raise_custom_error('A0019');
@@ -331,42 +331,6 @@ EXCEPTION
         PERFORM handle_error(SQLSTATE, SQLERRM, 'add_project_comment');
 end;
 $add_project_comment$
-    LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION get_project_comments(
-    p_project_id BIGINT
-)
-    RETURNS TABLE
-            (
-                id          BIGINT,
-                parent      BIGINT,
-                author      TEXT,
-                create_date TIMESTAMP,
-                content     TEXT,
-                likes       BIGINT,
-                interest    BIGINT
-            )
-AS
-$get_project_comments$
-BEGIN
-    RETURN QUERY
-        SELECT pci.project_comm_id AS id,
-               pci.parent_comm_id  AS parent,
-               pci.author,
-               pci.create_date,
-               pci.content,
-               pci.likes,
-               pci.interest
-        FROM projects_comments_info pci
-        WHERE pci.project_id = p_project_id
-        ORDER BY pci.create_date;
-
-EXCEPTION
-    WHEN OTHERS THEN
-        PERFORM handle_error(SQLSTATE, SQLERRM, 'get_project_comments');
-
-end;
-$get_project_comments$
     LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION add_thread(
@@ -396,7 +360,7 @@ BEGIN
     SELECT u.id
     INTO d_author_id
     FROM users u
-    WHERE u.nickname = p_author;
+    WHERE u.login = p_author;
 
     IF d_author_id IS NULL THEN
         PERFORM raise_custom_error('A0019');
@@ -444,7 +408,7 @@ BEGIN
     SELECT u.id
     INTO d_author_id
     FROM users u
-    WHERE u.nickname = p_author;
+    WHERE u.login = p_author;
 
     IF d_author_id IS NULL THEN
         PERFORM raise_custom_error('A0019');
@@ -505,284 +469,6 @@ $get_thread_comments$
 
 --User login
 
-CREATE OR REPLACE FUNCTION register_user(
-    p_name TEXT,
-    p_surname TEXT,
-    p_nickname TEXT,
-    p_email TEXT,
-    p_gender TEXT,
-    p_role TEXT,
-    p_pass_hash TEXT
-)
-    RETURNS TABLE
-            (
-                nickname TEXT,
-                role     TEXT
-            )
-AS
-$register_user$
-DECLARE
-    d_gender_id BIGINT;
-    d_role_id   BIGINT;
-BEGIN
-    --email
-    IF p_email IS NULL OR p_email !~ '^[^@]+@[^@]+\.[^@]+$' THEN
-        PERFORM raise_custom_error('A0001');
-    end if;
-
-    IF EXISTS (SELECT 1
-               FROM users u
-               WHERE u.email LIKE p_email) THEN
-        PERFORM raise_custom_error('A0004');
-    end if;
-
-    IF EXISTS (SELECT 1
-               FROM users u
-               WHERE u.nickname LIKE p_nickname) THEN
-        PERFORM raise_custom_error('A0008');
-    end if;
-
-    --role
-    SELECT r.id
-    INTO d_role_id
-    FROM roles r
-    WHERE r.name = p_role;
-
-    IF d_role_id IS NULL THEN
-        PERFORM raise_custom_error('A0002');
-    end if;
-
-    --gender
-    SELECT g.id
-    INTO d_gender_id
-    FROM genders g
-    WHERE g.name = p_gender;
-
-    IF d_gender_id IS NULL THEN
-        PERFORM raise_custom_error('A0003');
-    end if;
-
-    --prepare name
-    IF p_name IS NULL OR length(p_name) = 0 THEN
-        PERFORM raise_custom_error('A0009');
-    end if;
-
-    --prepare surname
-    IF p_surname IS NULL OR length(p_surname) = 0 THEN
-        PERFORM raise_custom_error('A0010');
-    end if;
-
-    RETURN QUERY
-        INSERT INTO "users" (role_id, name, surname, gender_id, nickname, email, pass_hash, token_id)
-            VALUES (d_role_id, p_name, p_surname, d_gender_id,
-                    p_nickname, p_email, p_pass_hash, NULL)
-            RETURNING "users".nickname, p_role;
-
-EXCEPTION
-    WHEN OTHERS THEN
-        PERFORM handle_error(SQLSTATE, SQLERRM, 'register_user');
-end;
-$register_user$
-    LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION check_login_credentials(
-    p_nickname TEXT,
-    p_email TEXT,
-    p_pass_hash TEXT
-)
-    RETURNS TABLE
-            (
-                nickname TEXT,
-                email    TEXT,
-                role     TEXT
-            )
-AS
-$check_login_credentials$
-DECLARE
-    d_user_id         BIGINT;
-    d_email_empty     BOOLEAN;
-    d_nickname_empty  BOOLEAN;
-    d_pass_hash       TEXT;
-    d_return_nickname TEXT;
-    d_return_email    TEXT;
-    d_return_role     TEXT;
-BEGIN
-    IF p_email IS NULL OR length(p_email) = 0 THEN
-        d_email_empty := TRUE;
-    ELSE
-        d_email_empty := FALSE;
-    end if;
-
-    IF p_nickname IS NULL OR length(p_nickname) = 0 THEN
-        d_nickname_empty := TRUE;
-    ELSE
-        d_nickname_empty := FALSE;
-    end if;
-
-    IF p_pass_hash IS NULL OR length(p_pass_hash) = 0 THEN
-        PERFORM raise_custom_error('A0011');
-    end if;
-
-    IF d_nickname_empty AND d_email_empty THEN
-        PERFORM raise_custom_error('A0024');
-    ELSE
-        IF NOT d_nickname_empty THEN
-            SELECT u.id
-            INTO d_user_id
-            FROM users u
-            WHERE u.nickname = p_nickname;
-
-            SELECT u.login, u.email, u.role
-            INTO d_return_nickname, d_return_email, d_return_role
-            FROM users_info u
-            WHERE u.login = p_nickname;
-        ELSE
-            SELECT u.id
-            INTO d_user_id
-            FROM users u
-            WHERE u.email = p_email;
-
-            SELECT u.login, u.email, u.role
-            INTO d_return_nickname, d_return_email, d_return_role
-            FROM users_info u
-            WHERE u.email = p_email;
-        end if;
-    end if;
-
-    IF d_user_id IS NULL THEN
-        PERFORM raise_custom_error('A0026');
-    end if;
-
-    SELECT u.pass_hash
-    INTO d_pass_hash
-    FROM users u
-    WHERE u.id = d_user_id;
-
-    IF d_pass_hash = p_pass_hash THEN
-        RETURN QUERY SELECT d_return_nickname, d_return_email, d_return_role;
-    ELSE
-        PERFORM raise_custom_error('A0005');
-    end if;
-
-EXCEPTION
-    WHEN OTHERS THEN
-        PERFORM handle_error(SQLSTATE, SQLERRM, 'check_login_credentials');
-end;
-$check_login_credentials$
-    LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION set_user_token(
-    p_nickname TEXT,
-    p_token TEXT,
-    p_expire_time BIGINT
-)
-    RETURNS TEXT AS
-$set_user_token$
-DECLARE
-    d_token_content TEXT;
-    d_token_id      BIGINT;
-BEGIN
-    SELECT u.token_id
-    INTO d_token_id
-    FROM users u
-    WHERE u.nickname = p_nickname;
-
-    IF d_token_id IS NULL THEN
-        INSERT INTO tokens (token, expire_time)
-        VALUES (p_token, p_expire_time)
-        RETURNING id INTO d_token_id;
-    ELSE
-        UPDATE tokens t
-        SET token       = p_token,
-            expire_time = p_expire_time
-        WHERE t.id = d_token_id;
-    end if;
-
-    UPDATE users u
-    SET token_id = d_token_id
-    WHERE u.nickname = p_nickname;
-
-    SELECT t.token
-    INTO d_token_content
-    FROM tokens t
-    WHERE t.id = d_token_id;
-
-    RETURN d_token_content;
-EXCEPTION
-    WHEN OTHERS THEN
-        PERFORM handle_error(SQLSTATE, SQLERRM, 'set_user_token');
-end;
-$set_user_token$
-    LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION get_user_token(
-    p_nickname TEXT
-)
-    RETURNS TABLE
-            (
-                token       TEXT,
-                expire_time BIGINT,
-                create_time TIMESTAMP
-            )
-AS
-$set_user_token$
-DECLARE
-    d_token_content TEXT;
-    d_expire_time   BIGINT;
-    d_create_time   TIMESTAMP;
-    d_token_id      BIGINT;
-BEGIN
-    SELECT u.token_id
-    INTO d_token_id
-    FROM users u
-    WHERE u.nickname = p_nickname;
-
-    SELECT t.token, t.expire_time, t.create_time
-    INTO d_token_content, d_expire_time, d_create_time
-    FROM tokens t
-    WHERE t.id = d_token_id;
-
-    RETURN QUERY SELECT d_token_content, d_expire_time, d_create_time;
-EXCEPTION
-    WHEN OTHERS THEN
-        PERFORM handle_error(SQLSTATE, SQLERRM, 'get_user_token');
-end;
-$set_user_token$
-    LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION delete_user_token(
-    p_nickname TEXT
-)
-    RETURNS TEXT AS
-$set_user_token$
-DECLARE
-    d_token_id BIGINT;
-BEGIN
-    SELECT u.token_id
-    INTO d_token_id
-    FROM users u
-    WHERE u.nickname = p_nickname;
-
-    IF d_token_id IS NULL THEN
-        RETURN NULL;
-    end if;
-
-    UPDATE users u
-    SET token_id = NULL
-    WHERE u.nickname = p_nickname;
-
-    DELETE
-    FROM tokens t
-    WHERE t.id = d_token_id;
-
-    RETURN NULL;
-
-EXCEPTION
-    WHEN OTHERS THEN
-        PERFORM handle_error(SQLSTATE, SQLERRM, 'delete_user_token');
-end;
-$set_user_token$
-    LANGUAGE plpgsql;
 
 -- NEW FUNCTIONS
 
@@ -818,7 +504,7 @@ $add_view$
     LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION add_like(
-    p_nickname TEXT,
+    p_login TEXT,
     p_project_id BIGINT,
     p_thread_id BIGINT,
     p_comment_id BIGINT
@@ -831,14 +517,14 @@ BEGIN
     SELECT u.id
     INTO d_user_id
     FROM users u
-    WHERE u.nickname = p_nickname;
+    WHERE u.login = p_login;
 
     IF d_user_id IS NULL THEN
         PERFORM raise_custom_error('A0019');
     end if;
 
     IF p_project_id IS NOT NULL THEN
-        IF p_comment_id IS NOT NULL THEN
+        IF p_comment_id IS NULL THEN
             INSERT INTO relation_project_like (user_id, project_id) VALUES (d_user_id, p_project_id);
         ELSE
             INSERT INTO relation_project_comment_like (user_id, project_comment_id) VALUES (d_user_id, p_comment_id);
@@ -847,7 +533,7 @@ BEGIN
     end if;
 
     IF p_thread_id IS NOT NULL THEN
-        IF p_comment_id IS NOT NULL THEN
+        IF p_comment_id IS NULL THEN
             INSERT INTO relation_thread_like (user_id, thread_id) VALUES (d_user_id, p_thread_id);
         ELSE
             INSERT INTO relation_thread_comment_like (user_id, thread_comment_id) VALUES (d_user_id, p_comment_id);
@@ -864,7 +550,7 @@ $add_like$
     LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION delete_like(
-    p_nickname TEXT,
+    p_login TEXT,
     p_project_id BIGINT,
     p_thread_id BIGINT,
     p_comment_id BIGINT
@@ -877,14 +563,14 @@ BEGIN
     SELECT u.id
     INTO d_user_id
     FROM users u
-    WHERE u.nickname = p_nickname;
+    WHERE u.login = p_login;
 
     IF d_user_id IS NULL THEN
         PERFORM raise_custom_error('A0019');
     end if;
 
     IF p_project_id IS NOT NULL THEN
-        IF p_comment_id IS NOT NULL THEN
+        IF p_comment_id IS NULL THEN
             DELETE FROM relation_project_like rpl WHERE rpl.project_id = p_project_id AND rpl.user_id = d_user_id;
         ELSE
             DELETE
@@ -896,7 +582,7 @@ BEGIN
     end if;
 
     IF p_thread_id IS NOT NULL THEN
-        IF p_comment_id IS NOT NULL THEN
+        IF p_comment_id IS NULL THEN
             DELETE FROM relation_thread_like rtl WHERE rtl.thread_id = p_thread_id AND rtl.user_id = d_user_id;
         ELSE
             DELETE
@@ -916,7 +602,7 @@ $delete_like$
     LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION add_save(
-    p_nickname TEXT,
+    p_login TEXT,
     p_project_id BIGINT,
     p_thread_id BIGINT,
     p_comment_id BIGINT
@@ -929,14 +615,14 @@ BEGIN
     SELECT u.id
     INTO d_user_id
     FROM users u
-    WHERE u.nickname = p_nickname;
+    WHERE u.login = p_login;
 
     IF d_user_id IS NULL THEN
         PERFORM raise_custom_error('A0019');
     end if;
 
     IF p_project_id IS NOT NULL THEN
-        IF p_comment_id IS NOT NULL THEN
+        IF p_comment_id IS NULL THEN
             INSERT INTO relation_project_save (user_id, project_id) VALUES (d_user_id, p_project_id);
         ELSE
             INSERT INTO relation_project_comment_interest (user_id, project_comment_id)
@@ -946,7 +632,7 @@ BEGIN
     end if;
 
     IF p_thread_id IS NOT NULL THEN
-        IF p_comment_id IS NOT NULL THEN
+        IF p_comment_id IS NULL THEN
             INSERT INTO relation_thread_save (user_id, thread_id) VALUES (d_user_id, p_thread_id);
         ELSE
             INSERT INTO relation_thread_comment_interest (user_id, thread_comment_id) VALUES (d_user_id, p_comment_id);
@@ -963,7 +649,7 @@ $add_save$
     LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION delete_save(
-    p_nickname TEXT,
+    p_login TEXT,
     p_project_id BIGINT,
     p_thread_id BIGINT,
     p_comment_id BIGINT
@@ -976,14 +662,14 @@ BEGIN
     SELECT u.id
     INTO d_user_id
     FROM users u
-    WHERE u.nickname = p_nickname;
+    WHERE u.login = p_login;
 
     IF d_user_id IS NULL THEN
         PERFORM raise_custom_error('A0019');
     end if;
 
     IF p_project_id IS NOT NULL THEN
-        IF p_comment_id IS NOT NULL THEN
+        IF p_comment_id IS NULL THEN
             DELETE FROM relation_project_save rps WHERE rps.project_id = p_project_id AND rps.user_id = d_user_id;
         ELSE
             DELETE
@@ -995,7 +681,7 @@ BEGIN
     end if;
 
     IF p_thread_id IS NOT NULL THEN
-        IF p_comment_id IS NOT NULL THEN
+        IF p_comment_id IS NULL THEN
             DELETE FROM relation_thread_save rts WHERE rts.thread_id = p_thread_id AND rts.user_id = d_user_id;
         ELSE
             DELETE
@@ -1014,43 +700,7 @@ end;
 $delete_save$
     LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION delete_user(
-    p_nickname TEXT,
-    p_email TEXT
-)
-    RETURNS BOOLEAN AS
-$delete_user$
-DECLARE
-    d_user_id BIGINT;
-BEGIN
 
-    IF p_nickname IS NOT NULL THEN
-        SELECT u.id
-        INTO d_user_id
-        FROM users u
-        WHERE u.nickname = p_nickname;
-    end if;
-
-    IF p_email IS NOT NULL THEN
-        SELECT u.id
-        INTO d_user_id
-        FROM users u
-        WHERE u.email = p_email;
-    end if;
-
-    IF d_user_id IS NOT NULL THEN
-        DELETE FROM users u WHERE u.id = d_user_id;
-
-        RETURN TRUE;
-    end if;
-
-    PERFORM raise_custom_error('A0019');
-EXCEPTION
-    WHEN OTHERS THEN
-        PERFORM handle_error(SQLSTATE, SQLERRM, 'delete_user');
-end;
-$delete_user$
-    LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION delete_project(
     p_project_id BIGINT
@@ -1141,7 +791,7 @@ BEGIN
     SELECT u.id
     INTO d_user_id
     FROM users u
-    WHERE u.nickname = p_reporter;
+    WHERE u.login = p_reporter;
 
     IF d_user_id IS NULL THEN
         PERFORM raise_custom_error('A0019');
@@ -1478,53 +1128,422 @@ end;
 $modify_thread_comment$
     LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION modify_user(
-    p_nickname TEXT,
+
+CREATE OR REPLACE FUNCTION user_create(
+    p_name TEXT,
+    p_surname TEXT,
+    p_login TEXT,
     p_email TEXT,
-    p_new_nickname TEXT,
-    p_new_email TEXT,
-    p_new_pass_hash TEXT
+    p_gender TEXT,
+    p_role TEXT,
+    p_pass_hash TEXT
+)
+    RETURNS TABLE
+            (
+                login TEXT,
+                role  TEXT
+            )
+AS
+$register_user$
+DECLARE
+    d_gender_id BIGINT;
+    d_role_id   BIGINT;
+BEGIN
+    --email
+    IF p_email IS NULL OR p_email !~ '^[^@]+@[^@]+\.[^@]+$' THEN
+        PERFORM raise_custom_error('A0001');
+    end if;
+
+    IF EXISTS (SELECT 1
+               FROM users u
+               WHERE u.email LIKE p_email) THEN
+        PERFORM raise_custom_error('A0004');
+    end if;
+
+    IF EXISTS (SELECT 1
+               FROM users u
+               WHERE u.login LIKE p_login) THEN
+        PERFORM raise_custom_error('A0008');
+    end if;
+
+    --role
+    SELECT r.id
+    INTO d_role_id
+    FROM roles r
+    WHERE r.name = p_role;
+
+    IF d_role_id IS NULL THEN
+        PERFORM raise_custom_error('A0002');
+    end if;
+
+    --gender
+    SELECT g.id
+    INTO d_gender_id
+    FROM genders g
+    WHERE g.name = p_gender;
+
+    IF d_gender_id IS NULL THEN
+        PERFORM raise_custom_error('A0003');
+    end if;
+
+    --prepare name
+    IF p_name IS NULL OR length(p_name) = 0 THEN
+        PERFORM raise_custom_error('A0009');
+    end if;
+
+    --prepare surname
+    IF p_surname IS NULL OR length(p_surname) = 0 THEN
+        PERFORM raise_custom_error('A0010');
+    end if;
+
+    RETURN QUERY
+        INSERT INTO "users" (role_id, name, surname, gender_id, login, email, pass_hash)
+            VALUES (d_role_id, p_name, p_surname, d_gender_id,
+                    p_login, p_email, p_pass_hash)
+            RETURNING "users".login, p_role;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        PERFORM handle_error(SQLSTATE, SQLERRM, 'register_user');
+end;
+$register_user$
+    LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION get_login_credentials(
+    p_login TEXT,
+    p_email TEXT
+)
+    RETURNS TABLE
+            (
+                login TEXT,
+                passHash TEXT,
+                role     TEXT
+            )
+AS
+$check_login_credentials$
+DECLARE
+    d_user_id     BIGINT;
+    d_email_empty BOOLEAN;
+    d_login_empty BOOLEAN;
+    d_pass_hash   TEXT;
+    d_return_role TEXT;
+    d_return_login TEXT;
+BEGIN
+    IF p_email IS NULL OR length(p_email) = 0 THEN
+        d_email_empty := TRUE;
+    ELSE
+        d_email_empty := FALSE;
+    end if;
+
+    IF p_login IS NULL OR length(p_login) = 0 THEN
+        d_login_empty := TRUE;
+    ELSE
+        d_login_empty := FALSE;
+    end if;
+
+    IF d_login_empty AND d_email_empty THEN
+        PERFORM raise_custom_error('A0024');
+    end if;
+
+    IF d_login_empty IS FALSE THEN
+        SELECT u.id, r.name, u.pass_hash, u.login
+        INTO d_user_id, d_return_role, d_pass_hash, d_return_login
+        FROM users u
+                 INNER JOIN roles r ON u.role_id = r.id
+        WHERE u.login = p_login
+          AND u.delete_date IS NULL;
+    ELSE
+        SELECT u.id, r.name, u.pass_hash, u.login
+        INTO d_user_id, d_return_role, d_pass_hash, d_return_login
+        FROM users u
+                 INNER JOIN roles r ON u.role_id = r.id
+        WHERE u.email = p_email
+          AND u.delete_date IS NULL;
+    end if;
+
+
+    IF d_user_id IS NULL THEN
+        PERFORM raise_custom_error('A0026');
+    end if;
+
+    RETURN QUERY SELECT d_return_login, d_pass_hash, d_return_role;
+EXCEPTION
+    WHEN OTHERS THEN
+        PERFORM handle_error(SQLSTATE, SQLERRM, 'check_login_credentials');
+end;
+$check_login_credentials$
+    LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION set_user_token(
+    p_login TEXT,
+    p_token TEXT,
+    p_expire_time TIMESTAMP
+)
+    RETURNS TEXT AS
+$set_user_token$
+DECLARE
+    d_token_content TEXT;
+    d_token_id      BIGINT;
+BEGIN
+    IF EXISTS(SELECT 1 FROM users u WHERE u.login = p_login AND u.delete_date IS NOT NULL) THEN
+        PERFORM raise_custom_error('A0019');
+    end if;
+
+    SELECT u.token_id
+    INTO d_token_id
+    FROM users u
+    WHERE u.login = p_login
+      AND u.delete_date IS NULL;
+
+
+    IF d_token_id IS NULL THEN
+        INSERT INTO tokens (token, expire_time)
+        VALUES (p_token, p_expire_time)
+        RETURNING id INTO d_token_id;
+    ELSE
+        UPDATE tokens t
+        SET token       = p_token,
+            expire_time = p_expire_time
+        WHERE t.id = d_token_id;
+    end if;
+
+    UPDATE users u
+    SET token_id = d_token_id
+    WHERE u.login = p_login
+      AND u.delete_date IS NULL;
+
+
+    SELECT t.token
+    INTO d_token_content
+    FROM tokens t
+    WHERE t.id = d_token_id;
+
+    RETURN d_token_content;
+EXCEPTION
+    WHEN OTHERS THEN
+        PERFORM handle_error(SQLSTATE, SQLERRM, 'set_user_token');
+end;
+$set_user_token$
+    LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION get_user_token(
+    p_login TEXT
+)
+    RETURNS TABLE
+            (
+                token       TEXT,
+                expire_time TIMESTAMP,
+                create_time TIMESTAMP
+            )
+AS
+$set_user_token$
+DECLARE
+    d_token_content TEXT;
+    d_expire_time   TIMESTAMP;
+    d_create_time   TIMESTAMP;
+    d_token_id      BIGINT;
+BEGIN
+    IF EXISTS(SELECT 1 FROM users u WHERE u.login = p_login AND u.delete_date IS NOT NULL) IS NULL THEN
+        PERFORM raise_custom_error('A0019');
+    end if;
+
+    SELECT u.token_id
+    INTO d_token_id
+    FROM users u
+    WHERE u.login = p_login
+      AND u.delete_date IS NULL;
+
+    IF d_token_id IS NULL THEN
+        RETURN QUERY SELECT NULL, NULL, NULL;
+    end if;
+
+    SELECT t.token, t.expire_time, t.create_time
+    INTO d_token_content, d_expire_time, d_create_time
+    FROM tokens t
+    WHERE t.id = d_token_id;
+
+    RETURN QUERY SELECT d_token_content, d_expire_time, d_create_time;
+EXCEPTION
+    WHEN OTHERS THEN
+        PERFORM handle_error(SQLSTATE, SQLERRM, 'get_user_token');
+end;
+$set_user_token$
+    LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION delete_user_token(
+    p_login TEXT
 )
     RETURNS BOOLEAN AS
-$modify_user$
+$set_user_token$
+DECLARE
+    d_token_id BIGINT;
+BEGIN
+    IF EXISTS(SELECT 1 FROM users u WHERE u.login = p_login AND u.delete_date IS NOT NULL) IS NULL THEN
+        PERFORM raise_custom_error('A0019');
+    end if;
+
+    SELECT u.token_id
+    INTO d_token_id
+    FROM users u
+    WHERE u.login = p_login
+      AND u.delete_date IS NULL;
+
+    IF d_token_id IS NULL THEN
+        RETURN TRUE;
+    end if;
+
+    UPDATE users u
+    SET token_id = NULL
+    WHERE u.login = p_login;
+
+    DELETE
+    FROM tokens t
+    WHERE t.id = d_token_id;
+
+    RETURN TRUE;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        PERFORM handle_error(SQLSTATE, SQLERRM, 'delete_user_token');
+end;
+$set_user_token$
+    LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION delete_user(
+    p_login TEXT
+)
+    RETURNS BOOLEAN AS
+$delete_user$
 DECLARE
     d_user_id BIGINT;
 BEGIN
-    IF p_nickname IS NOT NULL AND length(p_nickname) > 0 THEN
+    IF p_login IS NOT NULL THEN
         SELECT u.id
         INTO d_user_id
         FROM users u
-        WHERE u.nickname = p_nickname;
-    ELSE
-        IF p_email IS NOT NULL AND length(p_email) > 0 THEN
-            SELECT u.id
-            INTO d_user_id
-            FROM users u
-            WHERE u.email = p_email;
-        ELSE
-            PERFORM raise_custom_error('A0019');
-        end if;
+        WHERE u.login = p_login
+          AND u.delete_date IS NULL;
     end if;
 
-    IF p_new_nickname IS NOT NULL AND length(p_new_nickname) > 0 THEN
+    IF d_user_id IS NOT NULL THEN
         UPDATE users u
-        SET nickname = p_new_nickname
+        SET delete_date = now()
+        WHERE u.id = d_user_id;
+
+        RETURN TRUE;
+    end if;
+
+    PERFORM raise_custom_error('A0019');
+EXCEPTION
+    WHEN OTHERS THEN
+        PERFORM handle_error(SQLSTATE, SQLERRM, 'delete_user');
+end;
+$delete_user$
+    LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION modify_user(
+    p_login TEXT,
+    p_new_login TEXT,
+    p_new_email TEXT,
+    p_new_pass_hash TEXT,
+    p_new_name TEXT,
+    p_new_surname TEXT,
+    p_new_gender TEXT,
+    p_new_role TEXT
+)
+    RETURNS TABLE
+            (
+                login   TEXT,
+                email   TEXT,
+                name    TEXT,
+                surname TEXT,
+                gender  TEXT
+            )
+AS
+$modify_user$
+DECLARE
+    d_user_id   BIGINT;
+    d_gender_id SMALLINT;
+    d_role_id   SMALLINT;
+BEGIN
+    IF p_login IS NOT NULL AND length(p_login) > 0 THEN
+        SELECT u.id
+        INTO d_user_id
+        FROM users u
+        WHERE u.login = p_login
+          AND u.delete_date IS NULL;
+    ELSE
+        PERFORM raise_custom_error('A0019');
+    end if;
+
+    IF d_user_id IS NULL THEN
+        PERFORM raise_custom_error('A0019');
+    end if;
+
+    IF p_new_login IS NOT NULL AND length(p_new_login) > 0 THEN
+        UPDATE users u
+        SET login = p_new_login
         WHERE u.id = d_user_id;
     end if;
 
-    IF p_new_email IS NOT NULL AND length(p_new_nickname) > 0 THEN
+    IF p_new_email IS NOT NULL AND length(p_new_email) > 0 THEN
+        IF p_new_email !~ '^[^@]+@[^@]+\.[^@]+$' THEN
+            PERFORM raise_custom_error('A0001');
+        end if;
+
         UPDATE users u
         SET email = p_new_email
         WHERE u.id = d_user_id;
     end if;
 
-    IF p_new_nickname IS NOT NULL AND length(p_new_nickname) > 0 THEN
+    IF p_new_pass_hash IS NOT NULL AND length(p_new_pass_hash) > 0 THEN
         UPDATE users u
         SET pass_hash = p_new_pass_hash
         WHERE u.id = d_user_id;
     end if;
 
-    RETURN TRUE;
+    IF p_new_name IS NOT NULL AND length(p_new_name) > 0 THEN
+        UPDATE users u
+        SET name = p_new_name
+        WHERE u.id = d_user_id;
+    end if;
+
+    IF p_new_surname IS NOT NULL AND length(p_new_surname) > 0 THEN
+        UPDATE users u
+        SET surname = p_new_surname
+        WHERE u.id = d_user_id;
+    end if;
+
+    IF p_new_gender IS NOT NULL AND length(p_new_gender) > 0 THEN
+        SELECT g.id
+        INTO d_gender_id
+        FROM genders g
+        WHERE g.name = p_new_gender;
+
+        IF d_gender_id IS NOT NULL THEN
+            UPDATE users u
+            SET gender_id = d_gender_id
+            WHERE u.id = d_user_id;
+        end if;
+    end if;
+
+    IF p_new_role IS NOT NULL AND length(p_new_role) > 0 THEN
+        SELECT r.id
+        INTO d_role_id
+        FROM roles r
+        WHERE r.name = p_new_role;
+
+        IF d_role_id IS NOT NULL THEN
+            UPDATE users u
+            SET role_id = d_role_id
+            WHERE u.id = d_user_id;
+        end if;
+    end if;
+
+    RETURN QUERY
+        SELECT ui.login, ui.email, ui.name, ui.surname, ui.gender
+        FROM users_info ui
+        WHERE ui.id = d_user_id;
 EXCEPTION
     WHEN OTHERS THEN
         PERFORM handle_error(SQLSTATE, SQLERRM, 'modify_user');
@@ -1534,38 +1553,34 @@ $modify_user$
     LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION get_user_data(
-    p_nickname TEXT,
-    p_email TEXT
+    p_login TEXT
 )
     RETURNS TABLE
             (
-                Login     TEXT,
-                Email     TEXT,
-                Role      TEXT,
-                Name      TEXT,
-                Surname   TEXT,
-                Gender    TEXT,
-                Join_date TIMESTAMP
+                Login       TEXT,
+                Email       TEXT,
+                Role        TEXT,
+                Name        TEXT,
+                Surname     TEXT,
+                Gender      TEXT,
+                blocked     BOOLEAN,
+                Join_date   TIMESTAMP,
+                modify_date TIMESTAMP,
+                delete_date TIMESTAMP
             )
 AS
 $get_user_data$
 DECLARE
     d_user_id BIGINT;
 BEGIN
-    IF p_nickname IS NOT NULL AND length(p_nickname) > 0 THEN
+    IF p_login IS NOT NULL AND length(p_login) > 0 THEN
         SELECT u.id
         INTO d_user_id
         FROM users u
-        WHERE u.nickname = p_nickname;
+        WHERE u.login = p_login
+          AND u.delete_date IS NULL;
     ELSE
-        IF p_email IS NOT NULL AND length(p_email) > 0 THEN
-            SELECT u.id
-            INTO d_user_id
-            FROM users u
-            WHERE u.email = p_email;
-        ELSE
-            PERFORM raise_custom_error('A0026');
-        end if;
+        PERFORM raise_custom_error('A0026');
     end if;
 
     IF d_user_id IS NULL THEN
@@ -1578,15 +1593,139 @@ BEGIN
                         ui.Name,
                         ui.Surname,
                         ui.Gender,
-                        ui.Join_date
+                        u.blocked,
+                        ui.Join_date,
+                        ui.modify_date,
+                        u.delete_date
                  FROM users_info ui
-                          INNER JOIN users u ON ui.login = u.nickname
+                          INNER JOIN users u ON ui.login = u.login
                  WHERE u.id = d_user_id;
 
 EXCEPTION
     WHEN OTHERS THEN
         PERFORM handle_error(SQLSTATE, SQLERRM, 'get_user_data');
-
 end;
 $get_user_data$
+    LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION block_user(
+    p_login TEXT
+) RETURNS BOOLEAN AS
+$block_user$
+DECLARE
+    d_user_id BIGINT;
+BEGIN
+    IF p_login IS NOT NULL AND length(p_login) > 0 THEN
+        SELECT u.id
+        INTO d_user_id
+        FROM users u
+        WHERE u.login = p_login
+          AND u.delete_date IS NULL;
+    ELSE
+        PERFORM raise_custom_error('A0026');
+    end if;
+
+    IF d_user_id IS NOT NULL THEN
+        UPDATE users u
+        SET blocked = TRUE
+        WHERE u.id = d_user_id;
+    ELSE
+        PERFORM raise_custom_error('A0019');
+    end if;
+
+    RETURN TRUE;
+EXCEPTION
+    WHEN OTHERS THEN
+        PERFORM handle_error(SQLSTATE, SQLERRM, 'block_user');
+end;
+$block_user$
+    LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION check_if_user_blocked(
+    p_login TEXT
+) RETURNS BOOLEAN AS
+$check_if_user_blocked$
+DECLARE
+    d_user_id BIGINT;
+    d_result  BOOLEAN;
+BEGIN
+    IF p_login IS NOT NULL AND length(p_login) > 0 THEN
+        SELECT u.id
+        INTO d_user_id
+        FROM users u
+        WHERE u.login = p_login
+          AND u.delete_date IS NULL;
+    ELSE
+        PERFORM raise_custom_error('A0026');
+    end if;
+
+    IF d_user_id IS NOT NULL THEN
+        SELECT u.blocked
+        INTO d_result
+        FROM users u
+        WHERE u.id = d_user_id;
+    ELSE
+        PERFORM raise_custom_error('A0019');
+    end if;
+
+    RETURN d_result;
+EXCEPTION
+    WHEN OTHERS THEN
+        PERFORM handle_error(SQLSTATE, SQLERRM, 'check_if_user_blocked');
+end;
+$check_if_user_blocked$
+    LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION unblock_user(
+    p_login TEXT
+) RETURNS BOOLEAN AS
+$unblock_user$
+DECLARE
+    d_user_id BIGINT;
+BEGIN
+    IF p_login IS NOT NULL AND length(p_login) > 0 THEN
+        SELECT u.id
+        INTO d_user_id
+        FROM users u
+        WHERE u.login = p_login
+          AND u.delete_date IS NULL;
+    ELSE
+        PERFORM raise_custom_error('A0026');
+    end if;
+
+    IF d_user_id IS NOT NULL THEN
+        UPDATE users u
+        SET blocked = FALSE
+        WHERE u.id = d_user_id;
+    ELSE
+        PERFORM raise_custom_error('A0019');
+    end if;
+
+    RETURN TRUE;
+EXCEPTION
+    WHEN OTHERS THEN
+        PERFORM handle_error(SQLSTATE, SQLERRM, 'unblock_user');
+end;
+$unblock_user$
+    LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION user_score(
+    p_project_num BIGINT,
+    p_thread_num BIGINT,
+    p_likes BIGINT,
+    p_saves BIGINT,
+    p_views BIGINT
+) RETURNS BIGINT AS
+$user_score$
+BEGIN
+    RETURN COALESCE(p_project_num, 0) * 20
+        + COALESCE(p_thread_num, 0) * 20
+        + COALESCE(p_likes, 0) * 4
+        + COALESCE(p_saves, 0) * 8
+        + COALESCE(p_views, 0);
+EXCEPTION
+    WHEN OTHERS THEN
+        PERFORM handle_error(SQLSTATE, SQLERRM, 'user_score');
+end;
+$user_score$
     LANGUAGE plpgsql;

@@ -4,6 +4,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
+import bcrypt from "bcrypt";
 
 import { initDatabase, deleteDatabase } from "./Database/db.js";
 

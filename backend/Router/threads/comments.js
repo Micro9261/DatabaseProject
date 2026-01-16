@@ -11,40 +11,95 @@ import routerSaves from "./commentSaves.js";
 
 router.get("/", async (req, res) => {
   try {
-    console.log(req.user);
-    console.log(req.params);
-    console.log(req.body);
-    console.log(req.query);
-    res.json({ message: "/threads/:threadId/comm GET" });
+    const authHeader = req.user;
+    let login = null;
+    if (authHeader) {
+      login = authHeader.login;
+    }
+    const { threadId } = req.params;
+
+    const db = req.app.locals.db;
+    let resDB = [];
+    await db.tx(async (t) => {
+      t.none(req.app.locals.schema_query);
+      const sql =
+        "SELECT * FROM get_thread_comments_dfs(${threadId}, ${login})";
+      const sqlParams = { threadId: Number(threadId), login };
+      console.log(sqlParams);
+      resDB = await t.any(sql, sqlParams);
+    });
+
+    res.status(200).json(resDB);
   } catch (err) {
-    // console.log(err);
-    res.status(500).json({ error: "Database error" });
+    console.log(err);
+    res.status(500).json({ message: "Database error" });
   }
 });
 
 router.post("/", async (req, res) => {
   try {
-    console.log(req.user);
-    console.log(req.params);
-    console.log(req.body);
-    console.log(req.query);
-    res.json({ message: "/threads/:threadId/comm POST" });
+    const authHeader = req.user;
+    if (!authHeader) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+    const { threadId } = req.params;
+    const { login } = authHeader;
+    const { content } = req.body;
+    if (content === undefined) {
+      return res.status(500).json({ message: "invalid arguments undefind" });
+    }
+
+    const { parentId } = req.body;
+    if (parentId != null && !Number.isInteger(Number(parentId))) {
+      return res.status(500).json({ error: "Invalid parent_id" });
+    }
+
+    const db = req.app.locals.db;
+    let resDB = [];
+    await db.tx(async (t) => {
+      t.none(req.app.locals.schema_query);
+      const sql =
+        "SELECT * FROM add_threads_comment(${threadId}, ${parentId}, ${login}, ${content})";
+      const sqlParams = {
+        threadId: Number(threadId),
+        parentId: parentId !== undefined ? Number(parentId) : null,
+        login,
+        content,
+      };
+      console.log(sqlParams);
+      resDB = await t.oneOrNone(sql, sqlParams);
+    });
+
+    res.status(200).json(resDB);
   } catch (err) {
-    // console.log(err);
-    res.status(500).json({ error: "Database error" });
+    console.log(err);
+    res.status(500).json({ message: "Invalid arguments" });
   }
 });
 
 router.delete("/", async (req, res) => {
   try {
-    console.log(req.user);
-    console.log(req.params);
-    console.log(req.body);
-    console.log(req.query);
-    res.json({ message: "/threads/:threadId/comm DELETE" });
+    const authHeader = req.user;
+    if (!authHeader && authHeader.role == "user") {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+    const { threadId } = req.params;
+
+    const db = req.app.locals.db;
+    let resDB = [];
+    await db.tx(async (t) => {
+      t.none(req.app.locals.schema_query);
+      const sql =
+        "UPDATE thread_comment tc SET delete_date = now() WHERE tc.thread_id = ${threadId}";
+      const sqlParams = { threadId: Number(threadId) };
+      console.log(sqlParams);
+      resDB = await t.none(sql, sqlParams);
+    });
+
+    res.status(200).json(resDB);
   } catch (err) {
-    // console.log(err);
-    res.status(500).json({ error: "Database error" });
+    console.log(err);
+    res.status(500).json({ message: "Invalid arguments" });
   }
 });
 
@@ -54,40 +109,119 @@ router.param("commentId", intValidator);
 
 router.get("/:commentId", async (req, res) => {
   try {
-    console.log(req.user);
-    console.log(req.params);
-    console.log(req.body);
-    console.log(req.query);
-    res.json({ message: "/threads/:threadId/comments/:commentId GET" });
+    const { commentId, threadId } = req.params;
+
+    const db = req.app.locals.db;
+    let resDB = [];
+    await db.tx(async (t) => {
+      t.none(req.app.locals.schema_query);
+      const sql =
+        "SELECT * FROM threads_comments_info tci WHERE tci.thread_comm_id = ${commentId} and tci.thread_id = ${threadId}";
+      const sqlParams = {
+        commentId: Number(commentId),
+        threadId: Number(threadId),
+      };
+      console.log(sqlParams);
+      resDB = await t.one(sql, sqlParams);
+    });
+
+    res.status(200).json(resDB);
   } catch (err) {
-    // console.log(err);
-    res.status(500).json({ error: "Database error" });
+    console.log(err);
+    res.status(500).json({ message: "Database error" });
   }
 });
 
 router.patch("/:commentId", async (req, res) => {
   try {
-    console.log(req.user);
-    console.log(req.params);
-    console.log(req.body);
-    console.log(req.query);
-    res.json({ message: "/threads/:threadId/comments/:commentId PATCH" });
+    const authHeader = req.user;
+    if (!authHeader) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+    const { threadId, commentId } = req.params;
+    const { login, role } = authHeader;
+    const { content } = req.body;
+    if (content === undefined) {
+      return res.status(500).json({ error: "Invalid arguments undefined" });
+    }
+
+    if (role == "user") {
+      let resDB = [];
+      await db.tx(async (t) => {
+        t.none(req.app.locals.schema_query);
+        const sql =
+          "SELECT * FROM threads_comments_info tci WHERE tci.author = ${login} AND pi.thread_comm_id = ${commentId} AND pi.thread_id = ${threadId}";
+        const sqlParams = {
+          login,
+          commentId: Number(commentId),
+          threadId: Number(threadId),
+        };
+        resDB = await t.oneOrNone(sql, sqlParams);
+        if (!resDB) {
+          return res(401).json({ error: "Wrong user != project" });
+        }
+      });
+    }
+
+    const db = req.app.locals.db;
+    let resDB = [];
+    await db.tx(async (t) => {
+      t.none(req.app.locals.schema_query);
+      const sql =
+        "SELECT * FROM modify_thread_comment(${commentId}, ${content})";
+      const sqlParams = { commentId, content };
+      console.log(sqlParams);
+      resDB = await t.one(sql, sqlParams);
+    });
+
+    res.status(200).json(resDB);
   } catch (err) {
-    // console.log(err);
-    res.status(500).json({ error: "Database error" });
+    console.log(err);
+    res.status(500).json({ message: "Invalid arguments" });
   }
 });
 
 router.delete("/:commentId", async (req, res) => {
   try {
-    console.log(req.user);
-    console.log(req.params);
-    console.log(req.body);
-    console.log(req.query);
-    res.json({ message: "/threads/:threadId/comments/:commentId DELETE" });
+    const authHeader = req.user;
+    if (!authHeader) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+    const { threadId, commentId } = req.params;
+    const { login, role } = authHeader;
+
+    if (role == "user") {
+      let resDB = [];
+      await db.tx(async (t) => {
+        t.none(req.app.locals.schema_query);
+        const sql =
+          "SELECT * FROM threads_comments_info tci WHERE tci.author = ${login} AND tci.thread_comm_id = ${commentId} AND pi.thread_id = ${threadId}";
+        const sqlParams = {
+          login,
+          commentId: Number(commentId),
+          threadId: Number(threadId),
+        };
+        resDB = await t.oneOrNone(sql, sqlParams);
+        if (!resDB) {
+          return res(401).json({ error: "Wrong user != thread" });
+        }
+      });
+    }
+
+    const db = req.app.locals.db;
+    let resDB = [];
+    await db.tx(async (t) => {
+      t.none(req.app.locals.schema_query);
+      const sql = "SELECT * FROM delete(FALSE ,${commentId})";
+      const sqlParams = { commentId };
+      console.log(sqlParams);
+      resDB = await t.one(sql, sqlParams);
+    });
+
+    res.status(200).json(resDB);
   } catch (err) {
-    // console.log(err);
-    res.status(500).json({ error: "Database error" });
+    console.log(err);
+    res.status(500).json({ message: "Invalid arguments" });
   }
 });
 

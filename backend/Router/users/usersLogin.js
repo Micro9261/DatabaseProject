@@ -1,7 +1,7 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 import {
-  createPasshash,
+  checkPassword,
   accessTokenGen,
   refreshTokenGen,
 } from "../../Middleware/auth.js";
@@ -26,26 +26,31 @@ router.post("/", loginLimiter, async (req, res) => {
     ) {
       throw new Error("Invalid data!");
     }
-    const loginCheck = login === undefined ? null : login;
-    const emailCheck = email === undefined ? null : email;
-    const passHash = await createPasshash(password);
 
     const db = req.app.locals.db;
     let resDB = null;
     try {
-      await db.tx(async () => {
-        await db.none(req.app.locals.schema_query);
+      await db.tx(async (t) => {
+        await t.none(req.app.locals.schema_query);
 
-        const sql =
-          "SELECT * FROM check_login_credentials(${loginCheck}, ${emailCheck}, ${passHash})";
-        const sqlParams = { loginCheck, emailCheck, passHash };
-        resDB = await db.oneOrNone(sql, sqlParams);
+        const sql = "SELECT * FROM get_login_credentials(${login}, ${email})";
+        const sqlParams = {
+          login: login ? login : null,
+          email: email ? email : null,
+        };
+        console.log(sqlParams);
+        resDB = await t.oneOrNone(sql, sqlParams);
       });
+      const { passhash } = resDB;
+      const result = await checkPassword(password, passhash);
+      if (!result) {
+        throw new Error("Wrong password!");
+      }
     } catch (err) {
       return res.status(401).json({ messaage: "Invalid credentials" });
     }
 
-    const loginDB = resDB.nickname;
+    const loginDB = resDB.login;
     const roleDB = resDB.role;
 
     const tokenBody = { login: loginDB, role: roleDB };
@@ -61,7 +66,7 @@ router.post("/", loginLimiter, async (req, res) => {
 
       const sql =
         "SELECT * FROM set_user_token(${login}, ${refreshToken}, ${expires})";
-      const sqlParams = { login, refreshToken, expires };
+      const sqlParams = { login: loginDB, refreshToken, expires };
       resDB = await db.oneOrNone(sql, sqlParams);
     });
 
@@ -77,6 +82,7 @@ router.post("/", loginLimiter, async (req, res) => {
         accessToken,
       });
   } catch (error) {
+    console.log(error);
     return res.status(401).json({ messaage: "Invalid credentials" });
   }
 });
