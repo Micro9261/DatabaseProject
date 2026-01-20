@@ -69,8 +69,6 @@ const StyledOptButton = styled(Link)`
 export function Header() {
   const { getUserData, logout } = useAuth();
   const { login, role } = getUserData();
-  const navigate = useNavigate();
-  // console.log("user login, role", login, role);
 
   const fetchWithAuth = useFetchWithAuth();
   async function handleLogout() {
@@ -82,7 +80,6 @@ export function Header() {
       return;
     }
     logout();
-    navigate("/");
   }
 
   return (
@@ -93,7 +90,7 @@ export function Header() {
           <Settings size={24} />
         </StyledOptButton>
         {login ? (
-          <StyledOptButton onClick={() => handleLogout()}>
+          <StyledOptButton to={"/"} onClick={() => handleLogout()}>
             Wyloguj
           </StyledOptButton>
         ) : (

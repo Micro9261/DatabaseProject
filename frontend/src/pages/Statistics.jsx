@@ -3,6 +3,8 @@ import styled from "styled-components";
 import { Header } from "../components/Header";
 import { useFetchWithAuth } from "../utils/fetchData";
 import { Trash } from "lucide-react";
+import { useAuth } from "../Context/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const StatsContainer = styled.div`
   display: flex;
@@ -118,6 +120,8 @@ export function StatisticsPage() {
   const [currentTab, setCurrentTab] = useState("users");
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const { getUserData } = useAuth();
+  const navigate = useNavigate();
 
   const fetchData = async (type) => {
     setLoading(true);
@@ -143,6 +147,9 @@ export function StatisticsPage() {
 
   // Initial fetch
   useEffect(() => {
+    if (getUserData().role == "user") {
+      navigate("/");
+    }
     fetchData("users");
   }, []);
 
