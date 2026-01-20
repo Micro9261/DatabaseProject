@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Settings } from "lucide-react";
 import { useAuth } from "../Context/AuthContext";
 import { useFetchWithAuth } from "../utils/fetchData";
@@ -69,6 +69,7 @@ const StyledOptButton = styled(Link)`
 export function Header() {
   const { getUserData, logout } = useAuth();
   const { login, role } = getUserData();
+  const navigate = useNavigate();
   // console.log("user login, role", login, role);
 
   const fetchWithAuth = useFetchWithAuth();
@@ -81,6 +82,7 @@ export function Header() {
       return;
     }
     logout();
+    navigate("/");
   }
 
   return (
