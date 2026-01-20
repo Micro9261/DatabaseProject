@@ -50,8 +50,10 @@ SELECT
     p.title AS title,
     u.login AS author,
     p.create_date AS create_date,
+    p.modify_date As modify_date,
     p.views AS views,
     p.content AS content,
+    (p.delete_date IS NULL) AS active,
     (SELECT COUNT(*) FROM relation_project_like rpl WHERE rpl.project_id = p.id) AS likes,
     (SELECT COUNT(*) FROM relation_project_save rps WHERE rps.project_id = p.id) AS saves,
     (SELECT COUNT(*) FROM project_comment pc WHERE pc.project_id = p.id) AS comments
@@ -117,6 +119,7 @@ SELECT
     t.title AS title,
     u.login AS author,
     t.create_date AS create_date,
+    t.modify_date AS modify_date,
     t.views AS views,
     t.content AS content,
     (t.delete_date IS NULL) AS active,
@@ -196,8 +199,7 @@ ORDER BY score DESC, create_date DESC;
 CREATE OR REPLACE VIEW top_project_comments AS
 SELECT *
 FROM (SELECT *, get_score(likes, interest, 0, 0) AS score FROM projects_comments_info) t
-ORDER BY score DESC, create_date DESC
-LIMIT 3;
+ORDER BY score DESC, create_date DESC;
 
 CREATE OR REPLACE VIEW top_threads AS
 SELECT *
@@ -207,8 +209,7 @@ ORDER BY score DESC, create_date DESC;
 CREATE OR REPLACE VIEW top_threads_comments AS
 SELECT *
 FROM (SELECT *, get_score(likes, interest, 0, 0) AS score FROM threads_comments_info) t
-ORDER BY score DESC, create_date DESC
-LIMIT 3;
+ORDER BY score DESC, create_date DESC;
 
 CREATE OR REPLACE VIEW top_tags AS
 SELECT ti.tag_id AS id,
@@ -217,7 +218,77 @@ FROM tags_info ti
 ORDER BY ti.project_count + ti.thread_count DESC
 LIMIT 3;
 
+-- CREATE OR REPLACE VIEW top_users AS
+-- SELECT
+--     ui.id,
+--     ui.login,
+--     ui.email,
+--     ui.role,
+--     ui.name,
+--     ui.surname,
+--     ui.gender,
+--     ui.projects,
+--     ui.threads,
+
+--     -- aggregated activity
+--     COALESCE(SUM(pi.likes), 0)   AS likes,
+--     COALESCE(SUM(pi.saves), 0)   AS saves,
+--     COALESCE(SUM(pi.views), 0)   AS project_views,
+--     COALESCE(SUM(ti.likes), 0)   AS thread_likes,
+--     COALESCE(SUM(ti.saves), 0)   AS thread_saves,
+--     COALESCE(SUM(ti.views), 0)   AS thread_views,
+
+--     -- total views
+--     COALESCE(SUM(pi.views), 0) + COALESCE(SUM(ti.views), 0) AS total_views,
+
+--     -- score calculation
+--     user_score(
+--         ui.projects,
+--         ui.threads,
+--         CAST(COALESCE(SUM(pi.likes), 0) + COALESCE(SUM(ti.likes), 0) AS BIGINT),
+--         CAST(COALESCE(SUM(pi.saves), 0) + COALESCE(SUM(ti.saves), 0) AS BIGINT),
+--         CAST(COALESCE(SUM(pi.views), 0) + COALESCE(SUM(ti.views), 0) AS BIGINT)
+--     ) AS score,
+
+--     ui.join_date
+-- FROM users_info ui
+-- LEFT JOIN projects_info pi
+--        ON pi.author = ui.login
+-- LEFT JOIN threads_info ti
+--        ON ti.author = ui.login
+-- WHERE ui.active = TRUE
+-- GROUP BY
+--     ui.id,
+--     ui.login,
+--     ui.email,
+--     ui.role,
+--     ui.name,
+--     ui.surname,
+--     ui.gender,
+--     ui.projects,
+--     ui.threads,
+--     ui.join_date
+-- ORDER BY score DESC;
+
 CREATE OR REPLACE VIEW top_users AS
+WITH project_stats AS (
+    SELECT 
+        author,
+        SUM(likes) AS p_likes,
+        SUM(saves) AS p_saves,
+        SUM(views) AS p_views
+    FROM projects_info pi WHERE pi.active IS TRUE
+    GROUP BY author
+),
+thread_stats AS (
+    SELECT 
+        author,
+        SUM(likes) AS t_likes,
+        SUM(saves) AS t_saves,
+        SUM(views) AS t_views
+    FROM threads_info ti WHERE ti.active IS TRUE
+    GROUP BY author
+)
 SELECT
     ui.id,
     ui.login,
@@ -229,42 +300,25 @@ SELECT
     ui.projects,
     ui.threads,
 
-    -- aggregated activity
-    COALESCE(SUM(pi.likes), 0)   AS likes,
-    COALESCE(SUM(pi.saves), 0)   AS saves,
-    COALESCE(SUM(pi.views), 0)   AS project_views,
-    COALESCE(SUM(ti.likes), 0)   AS thread_likes,
-    COALESCE(SUM(ti.saves), 0)   AS thread_saves,
-    COALESCE(SUM(ti.views), 0)   AS thread_views,
+    COALESCE(ps.p_likes, 0) AS likes,
+    COALESCE(ps.p_saves, 0) AS saves,
+    COALESCE(ps.p_views, 0) AS project_views,
+    COALESCE(ts.t_likes, 0) AS thread_likes,
+    COALESCE(ts.t_saves, 0) AS thread_saves,
+    COALESCE(ts.t_views, 0) AS thread_views,
 
-    -- total views
-    COALESCE(SUM(pi.views), 0) + COALESCE(SUM(ti.views), 0) AS total_views,
+    (COALESCE(ps.p_views, 0) + COALESCE(ts.t_views, 0)) AS total_views,
 
-    -- score calculation
     user_score(
         ui.projects,
         ui.threads,
-        CAST(COALESCE(SUM(pi.likes), 0) + COALESCE(SUM(ti.likes), 0) AS BIGINT),
-        CAST(COALESCE(SUM(pi.saves), 0) + COALESCE(SUM(ti.saves), 0) AS BIGINT),
-        CAST(COALESCE(SUM(pi.views), 0) + COALESCE(SUM(ti.views), 0) AS BIGINT)
+        (COALESCE(ps.p_likes, 0) + COALESCE(ts.t_likes, 0))::BIGINT,
+        (COALESCE(ps.p_saves, 0) + COALESCE(ts.t_saves, 0))::BIGINT,
+        (COALESCE(ps.p_views, 0) + COALESCE(ts.t_views, 0))::BIGINT
     ) AS score,
 
     ui.join_date
 FROM users_info ui
-LEFT JOIN projects_info pi
-       ON pi.author = ui.login
-LEFT JOIN threads_info ti
-       ON ti.author = ui.login
-WHERE ui.active = TRUE
-GROUP BY
-    ui.id,
-    ui.login,
-    ui.email,
-    ui.role,
-    ui.name,
-    ui.surname,
-    ui.gender,
-    ui.projects,
-    ui.threads,
-    ui.join_date
-ORDER BY score DESC;
+LEFT JOIN project_stats ps ON ui.login = ps.author
+LEFT JOIN thread_stats ts  ON ui.login = ts.author
+WHERE ui.active = TRUE;

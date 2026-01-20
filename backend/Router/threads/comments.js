@@ -191,12 +191,13 @@ router.delete("/:commentId", async (req, res) => {
     const { threadId, commentId } = req.params;
     const { login, role } = authHeader;
 
+    const db = req.app.locals.db;
     if (role == "user") {
       let resDB = [];
       await db.tx(async (t) => {
         t.none(req.app.locals.schema_query);
         const sql =
-          "SELECT * FROM threads_comments_info tci WHERE tci.author = ${login} AND tci.thread_comm_id = ${commentId} AND pi.thread_id = ${threadId}";
+          "SELECT * FROM threads_comments_info tci WHERE tci.author = ${login} AND tci.thread_comm_id = ${commentId} AND tci.thread_id = ${threadId}";
         const sqlParams = {
           login,
           commentId: Number(commentId),
@@ -209,11 +210,10 @@ router.delete("/:commentId", async (req, res) => {
       });
     }
 
-    const db = req.app.locals.db;
     let resDB = [];
     await db.tx(async (t) => {
       t.none(req.app.locals.schema_query);
-      const sql = "SELECT * FROM delete(FALSE ,${commentId})";
+      const sql = "SELECT * FROM delete_comment(FALSE ,${commentId})";
       const sqlParams = { commentId };
       console.log(sqlParams);
       resDB = await t.one(sql, sqlParams);

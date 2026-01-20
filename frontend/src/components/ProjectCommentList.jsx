@@ -9,7 +9,12 @@ const StyledList = styled.ul`
   gap: 5px;
 `;
 
-export function ProjectCommentList({ commentsList, onEdit, onReplay }) {
+export function ProjectCommentList({
+  commentsList,
+  onEdit,
+  onReplay,
+  onDelete,
+}) {
   const { getUserData } = useAuth();
   let login = null;
   if (getUserData().login !== undefined) {
@@ -29,6 +34,7 @@ export function ProjectCommentList({ commentsList, onEdit, onReplay }) {
           interestSet={comment.set_interest}
           onEditSubmit={(content) => onEdit(comment.comment_id, content)}
           onReplaySubmit={(content) => onReplay(comment.comment_id, content)}
+          onDelete={() => onDelete(comment.comment_id)}
           depth={comment.depth}
           canModify={login == comment.author}
         />

@@ -1,6 +1,6 @@
 import { ThreadCommentList } from "../components/ThreadCommentList";
 import { ProjectInfo } from "../components/ProjectInfo";
-import { useOutletContext, useParams } from "react-router-dom";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useFetchWithAuth } from "../utils/fetchData";
 
@@ -12,6 +12,7 @@ export function ThreadPage() {
   const [thread, setThread] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const refetchData = async () => {
     try {
@@ -102,6 +103,48 @@ export function ThreadPage() {
     }
   };
 
+  const handleDeleteThreadComment = async (commentId) => {
+    try {
+      const response = await fetchWithAuth(
+        `/Threads/${ThreadsId}/comments/${commentId}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      if (response.ok) {
+        console.log("Thread comment add successfully");
+        await refetchData();
+        refreshSummary();
+      } else {
+        const errorData = await response.json();
+        console.log("Failed updating project: ", errorData);
+      }
+    } catch (err) {
+      console.log("Network error updating project", err);
+    }
+  };
+
+  const handleDeleteThread = async () => {
+    try {
+      const response = await fetchWithAuth(`/Threads/${ThreadsId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        console.log("Project deleted successfully");
+        await refetchData();
+        refreshSummary();
+        navigate("/Threads");
+      } else {
+        const errorData = await response.json();
+        console.log("Failed updating project: ", errorData);
+      }
+    } catch (err) {
+      console.log("Network error updating project", err);
+    }
+  };
+
   if (loading) return <div>Loading project details...</div>;
   if (!thread) return <div>Thread not found.</div>;
   return (
@@ -119,10 +162,14 @@ export function ThreadPage() {
         comments={thread.comments}
         onEditSubmit={(content) => handleEditThreadSubmit(content)}
         onReplaySubmit={(content) => handleThreadProjectCommentSubmit(content)}
+        onDelete={() => handleDeleteThread()}
       />
       <ThreadCommentList
         onEdit={(id, content) => handleEditThreadCommentSubmit(id, content)}
         commentsList={comments}
+        onDelete={(id) => {
+          handleDeleteThreadComment(id);
+        }}
       />
     </div>
   );

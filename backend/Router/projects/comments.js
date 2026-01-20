@@ -194,12 +194,13 @@ router.delete("/:commentId", async (req, res) => {
     const { projectId, commentId } = req.params;
     const { login, role } = authHeader;
 
+    const db = req.app.locals.db;
     if (role == "user") {
       let resDB = [];
       await db.tx(async (t) => {
         t.none(req.app.locals.schema_query);
         const sql =
-          "SELECT * FROM projects_comments_info pci WHERE pci.author = ${login} AND pci.project_id = ${projectId} AND pci.comm_id = ${commentId}";
+          "SELECT * FROM projects_comments_info pci WHERE pci.author = ${login} AND pci.project_id = ${projectId} AND pci.project_comm_id = ${commentId}";
         const sqlParams = {
           login,
           projectId: Number(projectId),
@@ -212,7 +213,6 @@ router.delete("/:commentId", async (req, res) => {
       });
     }
 
-    const db = req.app.locals.db;
     let resDB = [];
     await db.tx(async (t) => {
       t.none(req.app.locals.schema_query);

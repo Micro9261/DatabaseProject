@@ -1,4 +1,4 @@
-import { useOutletContext, useParams } from "react-router-dom";
+import { useNavigate, useOutletContext, useParams } from "react-router-dom";
 import { ProjectCommentList } from "../components/ProjectCommentList";
 import { ProjectInfo } from "../components/ProjectInfo";
 import { useFetchWithAuth } from "../utils/fetchData";
@@ -13,6 +13,7 @@ export function ProjectPage() {
   const [project, setProject] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   const refetchData = async () => {
     try {
@@ -104,6 +105,48 @@ export function ProjectPage() {
     }
   };
 
+  const handleDeleteProjectComment = async (commentId) => {
+    try {
+      const response = await fetchWithAuth(
+        `/Projects/${ProjectId}/comments/${commentId}`,
+        {
+          method: "DELETE",
+        },
+      );
+
+      if (response.ok) {
+        console.log("Project comment add successfully");
+        await refetchData();
+        refreshSummary();
+      } else {
+        const errorData = await response.json();
+        console.log("Failed updating project: ", errorData);
+      }
+    } catch (err) {
+      console.log("Network error updating project", err);
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    try {
+      const response = await fetchWithAuth(`/Projects/${ProjectId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        console.log("Project deleted successfully");
+        await refetchData();
+        refreshSummary();
+        navigate("/Projects");
+      } else {
+        const errorData = await response.json();
+        console.log("Failed updating project: ", errorData);
+      }
+    } catch (err) {
+      console.log("Network error updating project", err);
+    }
+  };
+
   if (loading) return <div>Loading project details...</div>;
   if (!project) return <div>Project not found.</div>;
 
@@ -126,6 +169,7 @@ export function ProjectPage() {
         onReplaySubmit={(content) =>
           handleReplayProjectCommentSubmit(null, content)
         }
+        onDelete={() => handleDeleteProject()}
       />
       <ProjectCommentList
         commentsList={comments}
@@ -133,6 +177,7 @@ export function ProjectPage() {
         onReplay={(id, content) =>
           handleReplayProjectCommentSubmit(id, content)
         }
+        onDelete={(id) => handleDeleteProjectComment(id)}
       />
     </div>
   );

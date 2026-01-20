@@ -188,6 +188,7 @@ router.delete("/:projectId", async (req, res) => {
     const { projectId } = req.params;
     const { login, role } = authHeader;
 
+    const db = req.app.locals.db;
     if (role == "user") {
       let resDB = [];
       await db.tx(async (t) => {
@@ -202,7 +203,6 @@ router.delete("/:projectId", async (req, res) => {
       });
     }
 
-    const db = req.app.locals.db;
     let resDB = [];
     await db.tx(async (t) => {
       t.none(req.app.locals.schema_query);

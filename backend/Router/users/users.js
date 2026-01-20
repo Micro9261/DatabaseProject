@@ -86,7 +86,7 @@ router.get("/", async (req, res) => {
           resDB = await t.one(sql, sqlParams);
         });
       } else if (role == "admin" || role == "moderator") {
-        const { from, to, top, order } = req.query;
+        const { from, to, top, order, projects } = req.query;
         switch (true) {
           case from !== undefined &&
             to !== undefined &&
@@ -113,11 +113,30 @@ router.get("/", async (req, res) => {
             await db.tx(async (t) => {
               t.none(req.app.locals.schema_query);
               const sql = `SELECT * FROM top_users tu ORDER BY tu.score ${order} LIMIT ${top}`;
-              const sqlParams = { top: Number(top) };
-              resDB = await t.any(sql, sqlParams);
+              // const sqlParams = { top: Number(top) };
+              // resDB = await t.any(sql, sqlParams);
+              resDB = await t.any(sql);
             });
             console.log("top, order logic");
             break;
+
+          case projects !== undefined && Number.isInteger(Number(projects)):
+            await db.tx(async (t) => {
+              t.none(req.app.locals.schema_query);
+              const sql = `SELECT 
+                        u.login, 
+                        COUNT(DISTINCT p.id) AS total_projects,
+                        SUM( (SELECT COUNT(*) FROM relation_project_like rpl WHERE rpl.project_id = p.id) ) AS total_likes_received
+                        FROM users u
+                        JOIN projects p ON u.id = p.author_id
+                        WHERE p.delete_date IS NULL
+                        GROUP BY u.id, u.login
+                        HAVING COUNT(DISTINCT p.id) >= ${Number(projects)}`;
+              resDB = await t.any(sql);
+            });
+            console.log("projects logic");
+            break;
+
           case top !== undefined ||
             order !== undefined ||
             from != undefined ||
@@ -281,6 +300,7 @@ router.delete("/:loginP", async (req, res) => {
         }
       });
     } else {
+      const body = req.body;
       login = body.login ? body.login : null;
     }
 
@@ -296,7 +316,7 @@ router.delete("/:loginP", async (req, res) => {
 
     res.status(200).json(resDB);
   } catch (err) {
-    // console.log(err);
+    console.log(err);
     res.status(500).json({ error: "Database error" });
   }
 });

@@ -6,9 +6,11 @@ import {
   SquarePen,
   Save,
   SquareX,
+  Trash,
 } from "lucide-react";
 import { useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
+import { useAuth } from "../Context/AuthContext";
 
 const iconSize = 24;
 
@@ -51,13 +53,6 @@ const StyledCommentModifyBtn = styled.button`
   }
 `;
 
-// const StyledCommentContent = styled.p`
-//   min-height: 50px;
-//   border: 1px solid gray;
-//   border-radius: 10px;
-//   padding: 2px;
-//   box-shadow: 1px 2px 2px black;
-// `;
 const StyledProjectContent = styled(TextareaAutosize)`
   border: 1px solid "black";
   border-radius: 5px;
@@ -65,7 +60,7 @@ const StyledProjectContent = styled(TextareaAutosize)`
   width: 100%;
   font-family: inherit;
   font-size: 1rem;
-  resize: none; /* The library handles height, so we disable manual resize */
+  resize: none;
   background-color: transparent;
   min-height: 50px;
   display: block;
@@ -118,6 +113,7 @@ export function ProjectComment({
   interestSet,
   onEditSubmit,
   onReplaySubmit,
+  onDelete,
   canModify,
 }) {
   const [modifyContent, setModifyContent] = useState(content);
@@ -125,6 +121,13 @@ export function ProjectComment({
 
   const [replay, setReplay] = useState(false);
   const [replayContent, setReplayContent] = useState("");
+
+  const { getUserData } = useAuth();
+  let role = null;
+
+  if (getUserData().role !== undefined) {
+    role = getUserData().role;
+  }
 
   function handleModify() {
     setModifyEnable(true);
@@ -165,6 +168,11 @@ export function ProjectComment({
             {canModify && !mofidyEnable && (
               <StyledCommentReplyBtn onClick={handleModify}>
                 <SquarePen size={16} strokeWidth={2} />
+              </StyledCommentReplyBtn>
+            )}
+            {(canModify || role == "admin") && (
+              <StyledCommentReplyBtn onClick={onDelete}>
+                <Trash size={16} strokeWidth={2} />
               </StyledCommentReplyBtn>
             )}
           </StyledCommentHeaderOpt>

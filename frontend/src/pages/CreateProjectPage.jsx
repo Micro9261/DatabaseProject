@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import TextareaAutosize from "react-textarea-autosize";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useOutletContext } from "react-router-dom";
 import { useAuth } from "../Context/AuthContext"; // Adjust path as needed
 import { useFetchWithAuth } from "../utils/fetchData"; // Adjust path as needed
 
@@ -72,6 +72,7 @@ export function CreateProjectPage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { refreshSummary } = useOutletContext();
 
   const { getUserData } = useAuth();
   const fetchWithAuth = useFetchWithAuth();
@@ -100,6 +101,7 @@ export function CreateProjectPage() {
 
       if (response.ok) {
         const data = await response.json();
+        refreshSummary();
         navigate(`/Projects/${data.id}`);
       } else {
         const errorData = await response.json().catch(() => ({}));

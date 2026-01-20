@@ -8,6 +8,7 @@ import {
   SquarePen,
   SquareX,
   ThumbsUp,
+  Trash,
 } from "lucide-react";
 import { getDateInfo } from "../utils/date";
 import { useAuth } from "../Context/AuthContext";
@@ -26,6 +27,16 @@ const StyledCommentStatusBtn = styled.button`
 const StyledCommentReplyBtn = styled.button`
   border: none;
   background-color: transparent;
+
+  &:hover {
+    color: green;
+  }
+`;
+
+const StyledCommentDeleteBtn = styled.button`
+  border: none;
+  background-color: transparent;
+  justify-content: right;
 
   &:hover {
     color: green;
@@ -75,12 +86,6 @@ const StyledFooterStats = styled.div`
   gap: 10px;
 `;
 
-// const StyledProjectContent = styled.p`
-//   border: 1px solid black;
-//   border-radius: 5px;
-//   min-height: 50px;
-// `;
-
 const StyledProjectContent = styled(TextareaAutosize)`
   border: 1px solid "black";
   border-radius: 5px;
@@ -88,7 +93,7 @@ const StyledProjectContent = styled(TextareaAutosize)`
   width: 100%;
   font-family: inherit;
   font-size: 1rem;
-  resize: none; /* The library handles height, so we disable manual resize */
+  resize: none;
   background-color: transparent;
   min-height: 50px;
   display: block;
@@ -121,6 +126,7 @@ export function ProjectInfo({
   comments,
   onEditSubmit,
   onReplaySubmit,
+  onDelete,
 }) {
   const [modifyContent, setModifyContent] = useState(content);
   const [mofidyEnable, setModifyEnable] = useState(false);
@@ -130,9 +136,13 @@ export function ProjectInfo({
 
   const { getUserData } = useAuth();
   let login = null;
+  let role = null;
 
   if (getUserData().login !== undefined) {
     login = getUserData().login;
+  }
+  if (getUserData().role !== undefined) {
+    role = getUserData().role;
   }
 
   function handleModify() {
@@ -173,7 +183,14 @@ export function ProjectInfo({
             <h1>{title}</h1>
             <h2>{author}</h2>
           </StyledHeaderSummary>
-          <p>{getDateInfo(date)}</p>
+          <div>
+            <p>{getDateInfo(date)}</p>
+            {(author == login || role == "admin") && (
+              <StyledCommentDeleteBtn onClick={onDelete}>
+                <Trash size={iconSize} strokeWidth={2} />
+              </StyledCommentDeleteBtn>
+            )}
+          </div>
         </StyledHeader>
 
         <StyledProjectContent

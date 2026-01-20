@@ -45,7 +45,7 @@ export function ThreadSummaryList({ threads = [], loading }) {
               views={project.views}
               likes={project.likes}
               saves={project.saves}
-              setLike={true}
+              setLike={false}
               setSave={false}
             />
           </StyledNavLink>

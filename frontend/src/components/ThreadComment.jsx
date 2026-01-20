@@ -1,7 +1,8 @@
 import styled from "styled-components";
-import { Heart, ThumbsUp, SquarePen, SquareX, Save } from "lucide-react";
+import { Heart, ThumbsUp, SquarePen, SquareX, Save, Trash } from "lucide-react";
 import { useState } from "react";
 import TextareaAutosize from "react-textarea-autosize";
+import { useAuth } from "../Context/AuthContext";
 
 const StyledComment = styled.li`
   display: flex;
@@ -100,10 +101,18 @@ export function ThreadComment({
   likeSet,
   interestSet,
   onEditSubmit,
+  onDelete,
   canModify,
 }) {
   const [modifyContent, setModifyContent] = useState(content);
   const [mofidyEnable, setModifyEnable] = useState(false);
+
+  const { getUserData } = useAuth();
+  let role = null;
+
+  if (getUserData().role !== undefined) {
+    role = getUserData().role;
+  }
 
   function handleModify() {
     setModifyEnable(true);
@@ -128,6 +137,11 @@ export function ThreadComment({
             {canModify && (
               <StyledCommentModifyBtn onClick={handleModify}>
                 <SquarePen size={16} strokeWidth={2} />
+              </StyledCommentModifyBtn>
+            )}
+            {(canModify || role == "admin") && (
+              <StyledCommentModifyBtn onClick={onDelete}>
+                <Trash size={16} strokeWidth={2} />
               </StyledCommentModifyBtn>
             )}
           </StyledCommentHeaderOpt>

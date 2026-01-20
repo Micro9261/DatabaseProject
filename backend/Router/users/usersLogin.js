@@ -76,7 +76,9 @@ router.post("/", loginLimiter, async (req, res) => {
       .cookie("refresh_token", "Bearer " + refreshToken, {
         expires,
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: false,
+        sameSite: "lax",
+        path: "/",
       })
       .json({
         message: "Login succesful!",

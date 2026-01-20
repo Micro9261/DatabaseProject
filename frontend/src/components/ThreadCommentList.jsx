@@ -9,7 +9,7 @@ const StyledList = styled.ul`
   gap: 5px;
 `;
 
-export function ThreadCommentList({ commentsList, onEdit }) {
+export function ThreadCommentList({ commentsList, onEdit, onDelete }) {
   const { getUserData } = useAuth();
   let login = null;
   if (getUserData().login !== undefined) {
@@ -30,6 +30,7 @@ export function ThreadCommentList({ commentsList, onEdit }) {
             interestSet={comment.set_interest}
             onEditSubmit={(content) => onEdit(comment.comment_id, content)}
             onReplaySubmit={() => alert("onReplay submit")}
+            onDelete={() => onDelete(comment.comment_id)}
             canModify={login == comment.author}
           />
         );
