@@ -156,7 +156,7 @@ export function LoginPage() {
       setAccessToken(fetcher.data.token);
       console.log(fetcher.data.login);
       setUserData(fetcher.data.login, fetcher.data.role);
-      navigate("/");
+      navigate(-1);
     }
   }, [fetcher.data, setAccessToken, setUserData, navigate]);
 

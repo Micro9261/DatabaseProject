@@ -12,6 +12,8 @@ import { loginAction, LoginPage } from "./pages/LoginPage";
 import { StatisticsPage } from "./pages/Statistics";
 import { SettingsPage } from "./pages/Settings";
 import { AuthProvider } from "./Context/AuthContext";
+import { CreateProjectPage } from "./pages/CreateProjectPage";
+import { CreateThreadPage } from "./pages/CreateThreadPage";
 
 const router = createBrowserRouter([
   {
@@ -27,6 +29,10 @@ const router = createBrowserRouter([
         path: "/Projects/:ProjectId",
         element: <ProjectPage />,
       },
+      {
+        path: "/Projects/create",
+        element: <CreateProjectPage />,
+      },
     ],
   },
   {
@@ -37,6 +43,10 @@ const router = createBrowserRouter([
       {
         path: "/Threads/:ThreadsId",
         element: <ThreadPage />,
+      },
+      {
+        path: "/Threads/create",
+        element: <CreateThreadPage />,
       },
     ],
   },

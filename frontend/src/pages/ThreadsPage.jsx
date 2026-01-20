@@ -27,6 +27,7 @@ export function ThreadsPage() {
             <SearchPanel
               onNewsetClick={() => alert("Newest")}
               onTopClick={() => alert("top")}
+              createPath={"/Threads/create"}
             />
             <ThreadSummaryList />
           </StyledInfoSection>

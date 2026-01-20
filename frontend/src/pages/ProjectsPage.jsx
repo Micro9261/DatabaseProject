@@ -27,6 +27,7 @@ export function ProjectsPage() {
             <SearchPanel
               onNewsetClick={() => alert("Newest")}
               onTopClick={() => alert("top")}
+              createPath={"/Projects/create"}
             />
             <ProjectSummaryList />
           </StyledInfoSection>

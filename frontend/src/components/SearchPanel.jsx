@@ -1,4 +1,6 @@
+import { PlusIcon } from "lucide-react";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 
 const StyledSearch = styled.div`
@@ -31,8 +33,9 @@ const StyledOptions = styled.div`
   gap: 20px;
 `;
 
-export function SearchPanel({ onNewsetClick, onTopClick }) {
+export function SearchPanel({ onNewsetClick, onTopClick, createPath }) {
   const [fixedOption, setFixedOption] = useState(true);
+  const navigate = useNavigate();
 
   return (
     <>
@@ -61,6 +64,13 @@ export function SearchPanel({ onNewsetClick, onTopClick }) {
               }}
             >
               Search
+            </StyledButton>
+            <StyledButton
+              onClick={() => {
+                navigate(createPath);
+              }}
+            >
+              <PlusIcon size={16} />
             </StyledButton>
           </StyledSearch>
         )}
