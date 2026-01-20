@@ -2,8 +2,12 @@ import express from "express";
 
 const router = express.Router();
 
-/************* /users/logout ********************/
+/************* api/users/logout ********************/
 
+/**
+ * sent authorization header
+ * return {message: "User logout!"}
+ */
 router.post("/", async (req, res) => {
   if (req.user === undefined) {
     return res.status(403).json({ message: "Authentication header required" });

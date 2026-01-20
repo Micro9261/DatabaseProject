@@ -13,9 +13,13 @@ import routerBlock from "./usersBlock.js";
 router.use("/login", routerLogin);
 router.use("/refresh", routerRefresh);
 
-/************* /user ********************/
+/************* api/user ********************/
 router.use(authenticateJWT);
 
+/**
+ *sent body {login, email, username, name, password, gender}
+ returns body {login, role}
+ */
 router.post("/", async (req, res) => {
   const body = req.body;
   if (!body) {
@@ -65,6 +69,19 @@ router.post("/", async (req, res) => {
   }
 });
 
+/**
+ * when user
+ * {id, login, email, role, name, surname, gender, projects, threads, comments, join_date, modify_date, blocked, active}
+ * when admin or moderator
+ *sent body {top (number), order(asc, desc)}
+ *receive body  top x {id, login, email, role, name, surname, gender, projects, threads, comments, join_date, modify_date, blocked, active}
+ *sent body {from (number), to(number)}
+ *receive body  to - form + 1 x {id, login, email, role, name, surname, gender, projects, threads, comments, join_date, modify_date, blocked, active}
+ *sent body {newest (number)}
+ * receive body newest * {id, login, email, role, name, surname, gender, projects, threads, comments, join_date, modify_date, blocked, active}
+ * sent other
+ * recieve max 100 x {id, login, email, role, name, surname, gender, projects, threads, comments, join_date, modify_date, blocked, active}
+ */
 router.get("/", async (req, res) => {
   try {
     const userAuth = req.user;
@@ -113,8 +130,6 @@ router.get("/", async (req, res) => {
             await db.tx(async (t) => {
               t.none(req.app.locals.schema_query);
               const sql = `SELECT * FROM top_users tu ORDER BY tu.score ${order} LIMIT ${top}`;
-              // const sqlParams = { top: Number(top) };
-              // resDB = await t.any(sql, sqlParams);
               resDB = await t.any(sql);
             });
             console.log("top, order logic");
@@ -170,6 +185,13 @@ router.use("/logout", routerLogout);
 
 /************* /users/:login ********************/
 
+/**
+ * when user only for user in authentication header
+ * revieve user info {login, email, role, name, surname, gender, blocked, join_date, modify_date, delete_date}
+ * when admin or moderetor
+ * sent body {login}
+ * revieve user info {login, email, role, name, surname, gender, blocked, join_date, modify_date, delete_date}
+ */
 router.get("/:loginP", async (req, res) => {
   try {
     const authHeader = req.user;
@@ -211,6 +233,11 @@ router.get("/:loginP", async (req, res) => {
   }
 });
 
+/**
+ * modify user data
+ * sent body {login, email, surname, name, gender, password}
+ * receive body {login, email, role, name, surname, gender, blocked, join_date, modify_date, delete_date}
+ */
 router.patch("/:loginP", async (req, res) => {
   try {
     const authHeader = req.user;
@@ -279,6 +306,12 @@ router.patch("/:loginP", async (req, res) => {
   }
 });
 
+/**
+ *when user
+ sent body {login} if login == authorization login account deleted
+ when admin or moderator
+ sent body {login} delete given user
+ */
 router.delete("/:loginP", async (req, res) => {
   try {
     const authHeader = req.user;
@@ -286,6 +319,7 @@ router.delete("/:loginP", async (req, res) => {
       return res.status(403).json({ error: "Invalid credentials" });
     }
 
+    const { loginP } = req.params;
     const { role } = authHeader;
     let login = authHeader.login;
     if (role == "user" && login == loginP) {

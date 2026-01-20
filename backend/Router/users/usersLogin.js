@@ -8,7 +8,7 @@ import {
 
 const router = express.Router();
 
-/************* /users/login ********************/
+/************* /api/users/login ********************/
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -16,6 +16,11 @@ const loginLimiter = rateLimit({
   message: "Too many login attempts, please try again later",
 });
 
+/**
+ * sent body {password, login, email} (login and/or email)
+ * reveive {message: "Login succesful!", accessToken, role, login}
+ * in cookies refreshToken
+ */
 router.post("/", loginLimiter, async (req, res) => {
   try {
     console.log(req.body);

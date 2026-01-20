@@ -5,6 +5,10 @@ const router = express.Router();
 
 /************* /users/refresh-token ********************/
 
+/**
+ * Sent authorization header
+ * receive {accessToken, message: "Token refreshed"}
+ */
 router.post("/", async (req, res) => {
   const cookies = req.cookies;
   if (!cookies.refresh_token) {
