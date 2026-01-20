@@ -22,28 +22,6 @@ LEFT JOIN project_comment pc ON p.id = pc.project_id
 LEFT JOIN thread_comment tc ON t.id = tc.thread_id
 GROUP BY u.id, u.login, u.email, r.name, g.name;
 
--- CREATE OR REPLACE VIEW projects_info AS
--- SELECT p.id                   AS project_id,
---        p.title                AS title,
---        u.login             AS author,
---        p.create_date          AS create_date,
---        COUNT(DISTINCT rpl.id) AS likes,
---        COUNT(DISTINCT rps.id) AS saves,
---        p.views                AS views,
---        COUNT(DISTINCT pc.id) AS comments,
---        p.content              AS content,
---        p.delete_date IS NULL AS active
--- FROM projects p
---          LEFT JOIN users u ON u.id = p.author_id
---          LEFT JOIN relation_project_like rpl ON p.id = rpl.project_id
---          LEFT JOIN relation_project_save rps ON p.id = rps.project_id
---         LEFT JOIN project_comment pc ON pc.project_id = p.id
--- GROUP BY p.id,
---     p.title,
---     u.login,
---     p.create_date,
---     p.views,
---     p.content;
 CREATE OR REPLACE VIEW projects_info AS
 SELECT 
     p.id AS project_id,
@@ -60,21 +38,6 @@ SELECT
 FROM projects p
 LEFT JOIN users u ON u.id = p.author_id;
 
--- CREATE OR REPLACE VIEW projects_comments_info AS
--- SELECT pc.id                   AS project_comm_id,
---        pc.parent_id            AS parent_comm_id,
---        pc.project_id           AS project_id,
---        u.login              AS author,
---        pc.create_date          AS create_date,
---        COUNT(DISTINCT rpcl.id) AS likes,
---        count(DISTINCT rpci.id) AS interest,
---        pc.content              AS content,
---        pc.delete_date IS NULL AS active
--- FROM project_comment pc
---          LEFT JOIN users u ON u.id = pc.author_id
---          LEFT JOIN relation_project_comment_like rpcl ON pc.id = rpcl.project_comment_id
---          LEFT JOIN relation_project_comment_interest rpci ON pc.id = rpci.project_comment_id
--- GROUP BY pc.id, u.login, pc.content;
 
 CREATE OR REPLACE VIEW projects_comments_info AS
 SELECT 
@@ -85,7 +48,6 @@ SELECT
     pc.create_date AS create_date,
     pc.content AS content,
     (pc.delete_date IS NULL) AS active,
-    -- Independent subqueries prevent the 'fan-out' effect
     (SELECT COUNT(*) 
      FROM relation_project_comment_like rpcl 
      WHERE rpcl.project_comment_id = pc.id) AS likes,
@@ -95,24 +57,6 @@ SELECT
 FROM project_comment pc
 LEFT JOIN users u ON u.id = pc.author_id;
 
-
--- CREATE OR REPLACE VIEW threads_info AS
--- SELECT t.id                   AS thread_id,
---        t.title                AS title,
---        u.login             AS author,
---        t.create_date          AS create_date,
---        COUNT(DISTINCT rtl.id) AS likes,
---        COUNT(DISTINCT rts.id) AS saves,
---        t.views                AS views,
---        COUNT(DISTINCT tc.id) AS comments,
---        t.content              AS content,
---        t.delete_date IS NULL AS active
--- FROM threads t
---          LEFT JOIN users u ON u.id = t.author_id
---          LEFT JOIN relation_thread_like rtl ON t.id = rtl.thread_id
---          LEFT JOIN relation_thread_save rts ON t.id = rts.thread_id
--- LEFT JOIN thread_comment tc ON t.id = tc.thread_id
--- GROUP BY t.id, u.login, t.content;
 CREATE OR REPLACE VIEW threads_info AS
 SELECT 
     t.id AS thread_id,
@@ -129,22 +73,6 @@ SELECT
 FROM threads t
 LEFT JOIN users u ON u.id = t.author_id;
 
--- CREATE OR REPLACE VIEW threads_comments_info AS
--- SELECT tc.id                   AS thread_comm_id,
---        tc.parent_id            AS parent_comm_id,
---        tc.thread_id            AS thread_id,
---        u.login              AS author,
---        tc.create_date          AS create_date,
---        COUNT(DISTINCT rtcl.id) AS likes,
---        count(DISTINCT rtci.id) AS interest,
---        tc.content              AS content,
---        tc.delete_date IS NULL AS active
--- FROM thread_comment tc
---          LEFT JOIN users u ON u.id = tc.author_id
---          LEFT JOIN relation_thread_comment_like rtcl ON tc.id = rtcl.thread_comment_id
---          LEFT JOIN relation_thread_comment_interest rtci ON tc.id = rtci.thread_comment_id
--- GROUP BY tc.id, u.login, tc.content;
-
 CREATE OR REPLACE VIEW threads_comments_info AS
 SELECT 
     tc.id AS thread_comm_id,
@@ -154,11 +82,9 @@ SELECT
     tc.create_date AS create_date,
     tc.content AS content,
     (tc.delete_date IS NULL) AS active,
-    -- Independent count for likes
     (SELECT COUNT(*) 
      FROM relation_thread_comment_like rtcl 
      WHERE rtcl.thread_comment_id = tc.id) AS likes,
-    -- Independent count for interest
     (SELECT COUNT(*) 
      FROM relation_thread_comment_interest rtci 
      WHERE rtci.thread_comment_id = tc.id) AS interest
@@ -217,58 +143,6 @@ SELECT ti.tag_id AS id,
 FROM tags_info ti
 ORDER BY ti.project_count + ti.thread_count DESC
 LIMIT 3;
-
--- CREATE OR REPLACE VIEW top_users AS
--- SELECT
---     ui.id,
---     ui.login,
---     ui.email,
---     ui.role,
---     ui.name,
---     ui.surname,
---     ui.gender,
---     ui.projects,
---     ui.threads,
-
---     -- aggregated activity
---     COALESCE(SUM(pi.likes), 0)   AS likes,
---     COALESCE(SUM(pi.saves), 0)   AS saves,
---     COALESCE(SUM(pi.views), 0)   AS project_views,
---     COALESCE(SUM(ti.likes), 0)   AS thread_likes,
---     COALESCE(SUM(ti.saves), 0)   AS thread_saves,
---     COALESCE(SUM(ti.views), 0)   AS thread_views,
-
---     -- total views
---     COALESCE(SUM(pi.views), 0) + COALESCE(SUM(ti.views), 0) AS total_views,
-
---     -- score calculation
---     user_score(
---         ui.projects,
---         ui.threads,
---         CAST(COALESCE(SUM(pi.likes), 0) + COALESCE(SUM(ti.likes), 0) AS BIGINT),
---         CAST(COALESCE(SUM(pi.saves), 0) + COALESCE(SUM(ti.saves), 0) AS BIGINT),
---         CAST(COALESCE(SUM(pi.views), 0) + COALESCE(SUM(ti.views), 0) AS BIGINT)
---     ) AS score,
-
---     ui.join_date
--- FROM users_info ui
--- LEFT JOIN projects_info pi
---        ON pi.author = ui.login
--- LEFT JOIN threads_info ti
---        ON ti.author = ui.login
--- WHERE ui.active = TRUE
--- GROUP BY
---     ui.id,
---     ui.login,
---     ui.email,
---     ui.role,
---     ui.name,
---     ui.surname,
---     ui.gender,
---     ui.projects,
---     ui.threads,
---     ui.join_date
--- ORDER BY score DESC;
 
 CREATE OR REPLACE VIEW top_users AS
 WITH project_stats AS (
