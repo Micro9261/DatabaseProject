@@ -177,7 +177,6 @@ AS
 $$
 WITH RECURSIVE comment_dfs AS
                    (
-                       -- 1️⃣ Root comments (stack initialization)
                        SELECT pc.project_comm_id         AS comment_id,
                               pc.project_id,
                               pc.author,
@@ -193,7 +192,6 @@ WITH RECURSIVE comment_dfs AS
 
                        UNION ALL
 
-                       -- 2️⃣ Depth-first expansion (stack push)
                        SELECT c.project_comm_id,
                               c.project_id,
                               c.author,
@@ -206,7 +204,7 @@ WITH RECURSIVE comment_dfs AS
                        FROM projects_comments_info c
                                 JOIN comment_dfs p
                                      ON c.parent_comm_id = p.comment_id
-                       WHERE NOT c.project_comm_id = ANY (p.path) -- cycle protection
+                       WHERE NOT c.project_comm_id = ANY (p.path)
                        AND c.active IS TRUE
                        AND c.project_id = p_project_id
                    )

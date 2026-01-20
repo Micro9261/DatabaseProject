@@ -2,7 +2,7 @@ import express from "express";
 
 const router = express.Router({ mergeParams: true });
 
-/*******************  /threads/:threadId/likes *********************/
+/******************* /api/threads/:threadId/likes *********************/
 
 router.get("/", async (req, res) => {
   try {

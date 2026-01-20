@@ -11,7 +11,7 @@ import routerLikes from "./threadLikes.js";
 import routerSaves from "./threadSaves.js";
 import routerViews from "./threadViews.js";
 
-/*******************  /threads *********************/
+/******************* /api/threads *********************/
 
 router.get("/", async (req, res) => {
   try {
@@ -101,7 +101,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-/*******************  /threads/:threadId *********************/
+/******************* /api/threads/:threadId *********************/
 
 router.param("threadId", intValidator);
 

@@ -8,7 +8,7 @@ import {
 
 const router = express.Router();
 
-/************* /api/users/login ********************/
+/*************  /api//users/login ********************/
 
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,

@@ -11,7 +11,7 @@ import routerLikes from "./projectLikes.js";
 import routerSaves from "./projectSaves.js";
 import routerViews from "./projectViews.js";
 
-/*******************  /projects *********************/
+/*******************  /api//projects *********************/
 
 router.get("/", async (req, res) => {
   try {
@@ -109,7 +109,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-/*******************  /projects/:projectId *********************/
+/*******************  /api//projects/:projectId *********************/
 
 router.param("projectId", intValidator);
 

@@ -96,10 +96,10 @@ DROP VIEW IF EXISTS threads_info;
 DROP VIEW IF EXISTS threads_comments_info;
 DROP VIEW IF EXISTS tags_info;
 DROP VIEW IF EXISTS reports_info;
-DROP VIEW IF EXISTS top_3_projects;
-DROP VIEW IF EXISTS top_3_project_comments;
-DROP VIEW IF EXISTS top_3_threads;
-DROP VIEW IF EXISTS top_3_threads_comments;
-DROP VIEW IF EXISTS top_3_tags;
+DROP VIEW IF EXISTS top_projects;
+DROP VIEW IF EXISTS top_project_comments;
+DROP VIEW IF EXISTS top_threads;
+DROP VIEW IF EXISTS top_threads_comments;
+DROP VIEW IF EXISTS top_tags;
 
 DROP SCHEMA IF EXISTS project CASCADE;

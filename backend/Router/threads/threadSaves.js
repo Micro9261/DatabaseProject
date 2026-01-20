@@ -2,7 +2,7 @@ import express from "express";
 
 const router = express.Router({ mergeParams: true });
 
-/*******************  /threads/:threadId/saves *********************/
+/******************* /api/threads/:threadId/saves *********************/
 
 router.get("/", async (req, res) => {
   try {
@@ -14,7 +14,7 @@ router.get("/", async (req, res) => {
       t.none(req.app.locals.schema_query);
       const sql =
         "SELECT saves FROM thread_id pi WHERE pi.thread_id = ${thread_id}";
-      const sqlParams = { threadId: Number(thread_id) };
+      const sqlParams = { threadId: Number(threadId) };
       console.log(sqlParams);
       resDB = await t.one(sql, sqlParams);
     });

@@ -7,7 +7,7 @@ const router = express.Router({ mergeParams: true });
 import routerLikes from "./commentLikes.js";
 import routerSaves from "./commentSaves.js";
 
-/*******************  /threads/:threadId/comments *********************/
+/*******************   /api//threads/:threadId/comments *********************/
 
 router.get("/", async (req, res) => {
   try {
@@ -104,7 +104,7 @@ router.delete("/", async (req, res) => {
   }
 });
 
-/*******************  /threads/:threadId/comments/:threadId *********************/
+/******************* /api/threads/:threadId/comments/:threadId *********************/
 
 router.param("commentId", intValidator);
 
