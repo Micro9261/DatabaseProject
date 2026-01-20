@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.post("/", async (req, res) => {
   if (req.user === undefined) {
-    return res.status(401).json({ message: "Authentication header required" });
+    return res.status(403).json({ message: "Authentication header required" });
   }
   const { login } = req.user;
 
@@ -23,7 +23,7 @@ router.post("/", async (req, res) => {
       result;
       if (!result) {
         return res
-          .status(401)
+          .status(403)
           .json({ message: "Authentication header required" });
       }
     });
@@ -41,7 +41,7 @@ router.post("/", async (req, res) => {
         }
       });
     } catch (err) {
-      return res.status(401).json({ message: "Invalid credentials!" });
+      return res.status(403).json({ message: "Invalid credentials!" });
     }
 
     res

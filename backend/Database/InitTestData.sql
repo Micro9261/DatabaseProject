@@ -47,6 +47,6 @@ $add_thread_comments$
     BEGIN
         PERFORM add_thread_comment(1, NULL, 'Pietruszka1', 'Lorem thread content');
         PERFORM add_thread_comment(2, NULL, 'Staszeczek', 'Lorem thread content test');
-        PERFORM add_thread_comment(2, 1, 'wrocławskiRok', 'Lorem thread content test next');
+        PERFORM add_thread_comment(2, NULL, 'wrocławskiRok', 'Lorem thread content test next');
     end;
 $add_thread_comments$;

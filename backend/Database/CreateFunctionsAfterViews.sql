@@ -208,6 +208,7 @@ WITH RECURSIVE comment_dfs AS
                                      ON c.parent_comm_id = p.comment_id
                        WHERE NOT c.project_comm_id = ANY (p.path) -- cycle protection
                        AND c.active IS TRUE
+                       AND c.project_id = p_project_id
                    )
 
 
@@ -225,6 +226,7 @@ SELECT d.comment_id,
                        FROM relation_project_comment_like rpcl
                                 JOIN users_info ui ON ui.id = rpcl.user_id
                        WHERE rpcl.project_comment_id = d.comment_id
+                       AND ui.login = p_login
                          AND rpcl.delete_date IS NULL) END AS set_likes,
        CASE
            WHEN p_login IS NULL THEN FALSE
@@ -232,6 +234,7 @@ SELECT d.comment_id,
                        FROM relation_project_comment_interest rpci
                                 INNER JOIN users_info ui ON ui.id = rpci.user_id
                        WHERE rpci.project_comment_id = d.comment_id
+                       AND ui.login = p_login
                          AND rpci.delete_date IS NULL) END AS set_interest
 FROM comment_dfs d
 ORDER BY path, create_date;
@@ -244,7 +247,7 @@ CREATE OR REPLACE FUNCTION get_thread_comments_dfs(
     RETURNS TABLE
             (
                 comment_id   BIGINT,
-                project_id   BIGINT,
+                thread_id   BIGINT,
                 author       TEXT,
                 content      TEXT,
                 create_date  TIMESTAMP,
@@ -257,7 +260,7 @@ CREATE OR REPLACE FUNCTION get_thread_comments_dfs(
     LANGUAGE sql
 AS
 $$
-WITH RECURSIVE comment_dfs AS
+WITH RECURSIVE comment_dfss AS
                    (
                        -- 1️⃣ Root comments (stack initialization)
                        SELECT pc.thread_comm_id         AS comment_id,
@@ -277,7 +280,7 @@ WITH RECURSIVE comment_dfs AS
 
                        -- 2️⃣ Depth-first expansion (stack push)
                        SELECT c.thread_comm_id,
-                              c.parent_comm_id,
+                              c.thread_id,
                               c.author,
                               c.content,
                               c.create_date,
@@ -286,10 +289,11 @@ WITH RECURSIVE comment_dfs AS
                               p.depth + 1,
                               p.path || c.thread_comm_id
                        FROM threads_comments_info c
-                                JOIN comment_dfs p
+                                JOIN comment_dfss p
                                      ON c.parent_comm_id = p.comment_id
-                       WHERE NOT c.thread_id = ANY (p.path) -- cycle protection
+                       WHERE NOT c.thread_comm_id = ANY (p.path) -- cycle protection
                        AND c.active IS TRUE
+                       AND c.thread_id = p.thread_id
                    )
 
 
@@ -304,53 +308,19 @@ SELECT d.comment_id,
        CASE
            WHEN p_login IS NULL THEN FALSE
            ELSE EXISTS(SELECT 1
-                       FROM relation_thread_comment_like rtcl
-                                JOIN users_info ui ON ui.id = rtcl.user_id
-                       WHERE rtcl.thread_comment_id = d.comment_id
-                         AND rtcl.delete_date IS NULL) END AS set_likes,
+                       FROM relation_thread_comment_like rpcl
+                                JOIN users_info ui ON ui.id = rpcl.user_id
+                       WHERE rpcl.thread_comment_id = d.comment_id
+                       AND ui.login = p_login
+                         AND rpcl.delete_date IS NULL) END AS set_like,
        CASE
            WHEN p_login IS NULL THEN FALSE
            ELSE EXISTS(SELECT 1
-                       FROM relation_thread_comment_interest rtci
-                                INNER JOIN users_info ui ON ui.id = rtci.user_id
-                       WHERE rtci.thread_comment_id = d.comment_id
-                         AND rtci.delete_date IS NULL) END AS set_interest
-FROM comment_dfs d
+                       FROM relation_thread_comment_interest rpci
+                                INNER JOIN users_info ui ON ui.id = rpci.user_id
+                       WHERE rpci.thread_comment_id = d.comment_id
+                       AND ui.login = p_login
+                         AND rpci.delete_date IS NULL) END AS set_interest
+FROM comment_dfss d
 ORDER BY path, create_date;
 $$;
-
-CREATE OR REPLACE FUNCTION get_project_comments(
-    p_project_id BIGINT
-)
-    RETURNS TABLE
-            (
-                id          BIGINT,
-                parent      BIGINT,
-                author      TEXT,
-                create_date TIMESTAMP,
-                content     TEXT,
-                likes       BIGINT,
-                interest    BIGINT
-            )
-AS
-$get_project_comments$
-BEGIN
-    RETURN QUERY
-        SELECT pci.project_comm_id AS id,
-               pci.parent_comm_id  AS parent,
-               pci.author,
-               pci.create_date,
-               pci.content,
-               pci.likes,
-               pci.interest
-        FROM projects_comments_info pci
-        WHERE pci.project_id = p_project_id
-        ORDER BY pci.create_date;
-
-EXCEPTION
-    WHEN OTHERS THEN
-        PERFORM handle_error(SQLSTATE, SQLERRM, 'get_project_comments');
-
-end;
-$get_project_comments$
-    LANGUAGE plpgsql;

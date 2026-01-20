@@ -40,7 +40,7 @@ router.post("/", async (req, res) => {
   try {
     const authHeader = req.user;
     if (!authHeader) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(403).json({ error: "Invalid credentials" });
     }
     const { threadId } = req.params;
     const { login } = authHeader;
@@ -59,10 +59,11 @@ router.post("/", async (req, res) => {
     await db.tx(async (t) => {
       t.none(req.app.locals.schema_query);
       const sql =
-        "SELECT * FROM add_threads_comment(${threadId}, ${parentId}, ${login}, ${content})";
+        "SELECT * FROM add_thread_comment(${threadId}, ${parentId}, ${login}, ${content})";
       const sqlParams = {
         threadId: Number(threadId),
-        parentId: parentId !== undefined ? Number(parentId) : null,
+        parentId:
+          parentId !== undefined && parentId !== null ? Number(parentId) : null,
         login,
         content,
       };
@@ -81,7 +82,7 @@ router.delete("/", async (req, res) => {
   try {
     const authHeader = req.user;
     if (!authHeader && authHeader.role == "user") {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(403).json({ error: "Invalid credentials" });
     }
     const { threadId } = req.params;
 
@@ -136,7 +137,7 @@ router.patch("/:commentId", async (req, res) => {
   try {
     const authHeader = req.user;
     if (!authHeader) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(403).json({ error: "Invalid credentials" });
     }
     const { threadId, commentId } = req.params;
     const { login, role } = authHeader;
@@ -145,12 +146,13 @@ router.patch("/:commentId", async (req, res) => {
       return res.status(500).json({ error: "Invalid arguments undefined" });
     }
 
+    const db = req.app.locals.db;
     if (role == "user") {
       let resDB = [];
       await db.tx(async (t) => {
         t.none(req.app.locals.schema_query);
         const sql =
-          "SELECT * FROM threads_comments_info tci WHERE tci.author = ${login} AND pi.thread_comm_id = ${commentId} AND pi.thread_id = ${threadId}";
+          "SELECT * FROM threads_comments_info tci WHERE tci.author = ${login} AND tci.thread_comm_id = ${commentId} AND tci.thread_id = ${threadId}";
         const sqlParams = {
           login,
           commentId: Number(commentId),
@@ -158,12 +160,11 @@ router.patch("/:commentId", async (req, res) => {
         };
         resDB = await t.oneOrNone(sql, sqlParams);
         if (!resDB) {
-          return res(401).json({ error: "Wrong user != project" });
+          return res(403).json({ error: "Wrong user != project" });
         }
       });
     }
 
-    const db = req.app.locals.db;
     let resDB = [];
     await db.tx(async (t) => {
       t.none(req.app.locals.schema_query);
@@ -185,7 +186,7 @@ router.delete("/:commentId", async (req, res) => {
   try {
     const authHeader = req.user;
     if (!authHeader) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(403).json({ error: "Invalid credentials" });
     }
     const { threadId, commentId } = req.params;
     const { login, role } = authHeader;
@@ -203,7 +204,7 @@ router.delete("/:commentId", async (req, res) => {
         };
         resDB = await t.oneOrNone(sql, sqlParams);
         if (!resDB) {
-          return res(401).json({ error: "Wrong user != thread" });
+          return res(403).json({ error: "Wrong user != thread" });
         }
       });
     }

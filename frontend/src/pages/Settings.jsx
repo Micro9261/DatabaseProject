@@ -1,7 +1,3 @@
-export function Settings() {
-  return (
-    <>
-      <h1>settings Page</h1>
-    </>
-  );
+export function SettingsPage() {
+  return <div>My settings page</div>;
 }

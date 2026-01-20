@@ -22,78 +22,145 @@ LEFT JOIN project_comment pc ON p.id = pc.project_id
 LEFT JOIN thread_comment tc ON t.id = tc.thread_id
 GROUP BY u.id, u.login, u.email, r.name, g.name;
 
+-- CREATE OR REPLACE VIEW projects_info AS
+-- SELECT p.id                   AS project_id,
+--        p.title                AS title,
+--        u.login             AS author,
+--        p.create_date          AS create_date,
+--        COUNT(DISTINCT rpl.id) AS likes,
+--        COUNT(DISTINCT rps.id) AS saves,
+--        p.views                AS views,
+--        COUNT(DISTINCT pc.id) AS comments,
+--        p.content              AS content,
+--        p.delete_date IS NULL AS active
+-- FROM projects p
+--          LEFT JOIN users u ON u.id = p.author_id
+--          LEFT JOIN relation_project_like rpl ON p.id = rpl.project_id
+--          LEFT JOIN relation_project_save rps ON p.id = rps.project_id
+--         LEFT JOIN project_comment pc ON pc.project_id = p.id
+-- GROUP BY p.id,
+--     p.title,
+--     u.login,
+--     p.create_date,
+--     p.views,
+--     p.content;
 CREATE OR REPLACE VIEW projects_info AS
-SELECT p.id                   AS project_id,
-       p.title                AS title,
-       u.login             AS author,
-       p.create_date          AS create_date,
-       COUNT(DISTINCT rpl.id) AS likes,
-       COUNT(DISTINCT rps.id) AS saves,
-       p.views                AS views,
-       COUNT(DISTINCT pc.id) AS comments,
-       p.content              AS content,
-       p.delete_date IS NULL AS active
+SELECT 
+    p.id AS project_id,
+    p.title AS title,
+    u.login AS author,
+    p.create_date AS create_date,
+    p.views AS views,
+    p.content AS content,
+    (SELECT COUNT(*) FROM relation_project_like rpl WHERE rpl.project_id = p.id) AS likes,
+    (SELECT COUNT(*) FROM relation_project_save rps WHERE rps.project_id = p.id) AS saves,
+    (SELECT COUNT(*) FROM project_comment pc WHERE pc.project_id = p.id) AS comments
 FROM projects p
-         LEFT JOIN users u ON u.id = p.author_id
-         LEFT JOIN relation_project_like rpl ON p.id = rpl.project_id
-         LEFT JOIN relation_project_save rps ON p.id = rps.project_id
-        LEFT JOIN project_comment pc ON pc.project_id = p.id
-GROUP BY p.id,
-    p.title,
-    u.login,
-    p.create_date,
-    p.views,
-    p.content;
+LEFT JOIN users u ON u.id = p.author_id;
+
+-- CREATE OR REPLACE VIEW projects_comments_info AS
+-- SELECT pc.id                   AS project_comm_id,
+--        pc.parent_id            AS parent_comm_id,
+--        pc.project_id           AS project_id,
+--        u.login              AS author,
+--        pc.create_date          AS create_date,
+--        COUNT(DISTINCT rpcl.id) AS likes,
+--        count(DISTINCT rpci.id) AS interest,
+--        pc.content              AS content,
+--        pc.delete_date IS NULL AS active
+-- FROM project_comment pc
+--          LEFT JOIN users u ON u.id = pc.author_id
+--          LEFT JOIN relation_project_comment_like rpcl ON pc.id = rpcl.project_comment_id
+--          LEFT JOIN relation_project_comment_interest rpci ON pc.id = rpci.project_comment_id
+-- GROUP BY pc.id, u.login, pc.content;
 
 CREATE OR REPLACE VIEW projects_comments_info AS
-SELECT pc.id                   AS project_comm_id,
-       pc.parent_id            AS parent_comm_id,
-       pc.project_id           AS project_id,
-       u.login              AS author,
-       pc.create_date          AS create_date,
-       COUNT(DISTINCT rpcl.id) AS likes,
-       count(DISTINCT rpci.id) AS interest,
-       pc.content              AS content,
-       pc.delete_date IS NULL AS active
+SELECT 
+    pc.id AS project_comm_id,
+    pc.parent_id AS parent_comm_id,
+    pc.project_id AS project_id,
+    u.login AS author,
+    pc.create_date AS create_date,
+    pc.content AS content,
+    (pc.delete_date IS NULL) AS active,
+    -- Independent subqueries prevent the 'fan-out' effect
+    (SELECT COUNT(*) 
+     FROM relation_project_comment_like rpcl 
+     WHERE rpcl.project_comment_id = pc.id) AS likes,
+    (SELECT COUNT(*) 
+     FROM relation_project_comment_interest rpci 
+     WHERE rpci.project_comment_id = pc.id) AS interest
 FROM project_comment pc
-         LEFT JOIN users u ON u.id = pc.author_id
-         LEFT JOIN relation_project_comment_like rpcl ON pc.id = rpcl.project_comment_id
-         LEFT JOIN relation_project_comment_interest rpci ON pc.id = rpci.project_comment_id
-GROUP BY pc.id, u.login, pc.content;
+LEFT JOIN users u ON u.id = pc.author_id;
 
+
+-- CREATE OR REPLACE VIEW threads_info AS
+-- SELECT t.id                   AS thread_id,
+--        t.title                AS title,
+--        u.login             AS author,
+--        t.create_date          AS create_date,
+--        COUNT(DISTINCT rtl.id) AS likes,
+--        COUNT(DISTINCT rts.id) AS saves,
+--        t.views                AS views,
+--        COUNT(DISTINCT tc.id) AS comments,
+--        t.content              AS content,
+--        t.delete_date IS NULL AS active
+-- FROM threads t
+--          LEFT JOIN users u ON u.id = t.author_id
+--          LEFT JOIN relation_thread_like rtl ON t.id = rtl.thread_id
+--          LEFT JOIN relation_thread_save rts ON t.id = rts.thread_id
+-- LEFT JOIN thread_comment tc ON t.id = tc.thread_id
+-- GROUP BY t.id, u.login, t.content;
 CREATE OR REPLACE VIEW threads_info AS
-SELECT t.id                   AS thread_id,
-       t.title                AS title,
-       u.login             AS author,
-       t.create_date          AS create_date,
-       COUNT(DISTINCT rtl.id) AS likes,
-       COUNT(DISTINCT rts.id) AS saves,
-       t.views                AS views,
-       COUNT(DISTINCT tc.id) AS comments,
-       t.content              AS content,
-       t.delete_date IS NULL AS active
+SELECT 
+    t.id AS thread_id,
+    t.title AS title,
+    u.login AS author,
+    t.create_date AS create_date,
+    t.views AS views,
+    t.content AS content,
+    (t.delete_date IS NULL) AS active,
+    (SELECT COUNT(*) FROM relation_thread_like rtl WHERE rtl.thread_id = t.id) AS likes,
+    (SELECT COUNT(*) FROM relation_thread_save rts WHERE rts.thread_id = t.id) AS saves,
+    (SELECT COUNT(*) FROM thread_comment tc WHERE tc.thread_id = t.id) AS comments
 FROM threads t
-         LEFT JOIN users u ON u.id = t.author_id
-         LEFT JOIN relation_thread_like rtl ON t.id = rtl.thread_id
-         LEFT JOIN relation_thread_save rts ON t.id = rts.thread_id
-LEFT JOIN thread_comment tc ON t.id = tc.thread_id
-GROUP BY t.id, u.login, t.content;
+LEFT JOIN users u ON u.id = t.author_id;
+
+-- CREATE OR REPLACE VIEW threads_comments_info AS
+-- SELECT tc.id                   AS thread_comm_id,
+--        tc.parent_id            AS parent_comm_id,
+--        tc.thread_id            AS thread_id,
+--        u.login              AS author,
+--        tc.create_date          AS create_date,
+--        COUNT(DISTINCT rtcl.id) AS likes,
+--        count(DISTINCT rtci.id) AS interest,
+--        tc.content              AS content,
+--        tc.delete_date IS NULL AS active
+-- FROM thread_comment tc
+--          LEFT JOIN users u ON u.id = tc.author_id
+--          LEFT JOIN relation_thread_comment_like rtcl ON tc.id = rtcl.thread_comment_id
+--          LEFT JOIN relation_thread_comment_interest rtci ON tc.id = rtci.thread_comment_id
+-- GROUP BY tc.id, u.login, tc.content;
 
 CREATE OR REPLACE VIEW threads_comments_info AS
-SELECT tc.id                   AS thread_comm_id,
-       tc.parent_id            AS parent_comm_id,
-       tc.thread_id            AS thread_id,
-       u.login              AS author,
-       tc.create_date          AS create_date,
-       COUNT(DISTINCT rtcl.id) AS likes,
-       count(DISTINCT rtci.id) AS interest,
-       tc.content              AS content,
-       tc.delete_date IS NULL AS active
+SELECT 
+    tc.id AS thread_comm_id,
+    tc.parent_id AS parent_comm_id,
+    tc.thread_id AS thread_id,
+    u.login AS author,
+    tc.create_date AS create_date,
+    tc.content AS content,
+    (tc.delete_date IS NULL) AS active,
+    -- Independent count for likes
+    (SELECT COUNT(*) 
+     FROM relation_thread_comment_like rtcl 
+     WHERE rtcl.thread_comment_id = tc.id) AS likes,
+    -- Independent count for interest
+    (SELECT COUNT(*) 
+     FROM relation_thread_comment_interest rtci 
+     WHERE rtci.thread_comment_id = tc.id) AS interest
 FROM thread_comment tc
-         LEFT JOIN users u ON u.id = tc.author_id
-         LEFT JOIN relation_thread_comment_like rtcl ON tc.id = rtcl.thread_comment_id
-         LEFT JOIN relation_thread_comment_interest rtci ON tc.id = rtci.thread_comment_id
-GROUP BY tc.id, u.login, tc.content;
+LEFT JOIN users u ON u.id = tc.author_id;
 
 CREATE OR REPLACE VIEW tags_info AS
 SELECT t.id AS tag_id,
@@ -123,25 +190,23 @@ ORDER BY rn.report_date;
 
 CREATE OR REPLACE VIEW top_projects AS
 SELECT *
-FROM (SELECT *, get_score(likes, saves) AS score FROM projects_info) t
-ORDER BY score DESC, create_date DESC
-LIMIT 3;
+FROM (SELECT *, get_score(likes, saves, views, comments) AS score FROM projects_info) t
+ORDER BY score DESC, create_date DESC;
 
 CREATE OR REPLACE VIEW top_project_comments AS
 SELECT *
-FROM (SELECT *, get_score(likes, interest) AS score FROM projects_comments_info) t
+FROM (SELECT *, get_score(likes, interest, 0, 0) AS score FROM projects_comments_info) t
 ORDER BY score DESC, create_date DESC
 LIMIT 3;
 
 CREATE OR REPLACE VIEW top_threads AS
 SELECT *
-FROM (SELECT *, get_score(likes, saves) AS score FROM threads_info) t
-ORDER BY score DESC, create_date DESC
-LIMIT 3;
+FROM (SELECT *, get_score(likes, saves, views, comments) AS score FROM threads_info) t
+ORDER BY score DESC, create_date DESC;
 
 CREATE OR REPLACE VIEW top_threads_comments AS
 SELECT *
-FROM (SELECT *, get_score(likes, interest) AS score FROM threads_comments_info) t
+FROM (SELECT *, get_score(likes, interest, 0, 0) AS score FROM threads_comments_info) t
 ORDER BY score DESC, create_date DESC
 LIMIT 3;
 

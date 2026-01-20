@@ -18,6 +18,7 @@ const loginLimiter = rateLimit({
 
 router.post("/", loginLimiter, async (req, res) => {
   try {
+    console.log(req.body);
     const { login, email, password } = req.body;
 
     if (
@@ -47,7 +48,7 @@ router.post("/", loginLimiter, async (req, res) => {
         throw new Error("Wrong password!");
       }
     } catch (err) {
-      return res.status(401).json({ messaage: "Invalid credentials" });
+      return res.status(403).json({ messaage: "Invalid credentials" });
     }
 
     const loginDB = resDB.login;
@@ -80,10 +81,12 @@ router.post("/", loginLimiter, async (req, res) => {
       .json({
         message: "Login succesful!",
         accessToken,
+        role: roleDB,
+        login: loginDB,
       });
   } catch (error) {
     console.log(error);
-    return res.status(401).json({ messaage: "Invalid credentials" });
+    return res.status(403).json({ messaage: "Invalid credentials" });
   }
 });
 

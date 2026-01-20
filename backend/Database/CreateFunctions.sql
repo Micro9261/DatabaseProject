@@ -700,7 +700,30 @@ end;
 $delete_save$
     LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION add_view(
+    p_project_id BIGINT,
+    p_thread_id BIGINT
+)
+    RETURNS BOOLEAN AS
+$add_view$
+BEGIN
+    IF p_project_id IS NOT NULL AND EXISTS(SELECT 1 FROM projects p WHERE p.id = p_project_id) THEN
+        UPDATE projects p SET views = views + 1 WHERE p.id = p_project_id;
+        RETURN TRUE;
+    end if;
 
+    IF p_thread_id IS NOT NULL AND EXISTS(SELECT 1 FROM threads t WHERE t.id = p_thread_id) THEN
+        UPDATE threads t SET views = views + 1 WHERE t.id = p_thread_id;
+        RETURN TRUE;
+    end if;
+
+    RETURN FALSE;
+EXCEPTION
+    WHEN OTHERS THEN
+        PERFORM handle_error(SQLSTATE, SQLERRM, 'add_view');
+end;
+$add_view$
+    LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION delete_project(
     p_project_id BIGINT
@@ -970,12 +993,14 @@ $delete_tag$
 
 CREATE OR REPLACE FUNCTION get_score(
     p_likes BIGINT,
-    p_saves BIGINT
+    p_saves BIGINT,
+    p_views BIGINT,
+    p_comments BIGINT
 )
     RETURNS BIGINT AS
 $get_score$
 BEGIN
-    RETURN p_likes + 10 * p_saves;
+    RETURN 2 * p_likes + 10 * p_saves + 20 * p_comments + p_views;
 
 EXCEPTION
     WHEN OTHERS THEN

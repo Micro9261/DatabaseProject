@@ -9,12 +9,13 @@ router.use(authenticateJWT);
 import routerComments from "./comments.js";
 import routerLikes from "./projectLikes.js";
 import routerSaves from "./projectSaves.js";
+import routerViews from "./projectViews.js";
 
 /*******************  /projects *********************/
 
 router.get("/", async (req, res) => {
   try {
-    const { from, to, top, order } = req.query;
+    const { from, to, top, order, newest } = req.query;
 
     const db = req.app.locals.db;
     let resDB = [];
@@ -43,11 +44,19 @@ router.get("/", async (req, res) => {
         ["asc", "desc"].includes(order.toLowerCase()):
         await db.tx(async (t) => {
           t.none(req.app.locals.schema_query);
-          const sql = `SELECT * FROM top_projects tp ORDER BY tp.score ${order} LIMIT ${top}`;
-          const sqlParams = { top: Number(top) };
-          resDB = await t.any(sql, sqlParams);
+          const sql = `SELECT * FROM projects_info tp ORDER BY tp.score ${order} LIMIT ${Number(top) === 0 ? "" : Number(top)}`;
+          // const sqlParams = { top: Number(top) };
+          resDB = await t.any(sql);
         });
         console.log("top, order logic");
+        break;
+
+      case newest !== undefined && Number.isInteger(Number(newest)):
+        await db.tx(async (t) => {
+          t.none(req.app.locals.schema_query);
+          const sql = `SELECT * FROM projects_info tp ORDER BY tp.create_date LIMIT ${Number(newest) === 0 ? "" : Number(newest)}`;
+          resDB = await t.any(sql);
+        });
         break;
       case top !== undefined ||
         order !== undefined ||
@@ -58,7 +67,7 @@ router.get("/", async (req, res) => {
         await db.tx(async (t) => {
           t.none(req.app.locals.schema_query);
           const sql =
-            "SELECT * FROM top_projects tp ORDER BY tp.score LIMIT 100";
+            "SELECT * FROM projects_info tp ORDER BY tp.create_date LIMIT 100";
           const sqlParams = { top, order };
           resDB = await t.any(sql, sqlParams);
         });
@@ -75,7 +84,7 @@ router.post("/", async (req, res) => {
   try {
     const authHeader = req.user;
     if (!authHeader) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(403).json({ error: "Invalid credentials" });
     }
 
     const { login } = authHeader;
@@ -130,7 +139,7 @@ router.patch("/:projectId", async (req, res) => {
   try {
     const authHeader = req.user;
     if (!authHeader) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(403).json({ error: "Invalid credentials" });
     }
     const { projectId } = req.params;
     const { login, role } = authHeader;
@@ -139,6 +148,7 @@ router.patch("/:projectId", async (req, res) => {
       return res.status(500).json({ error: "Invalid arguments undefined" });
     }
 
+    const db = req.app.locals.db;
     if (role == "user") {
       let resDB = [];
       await db.tx(async (t) => {
@@ -148,12 +158,11 @@ router.patch("/:projectId", async (req, res) => {
         const sqlParams = { login, projectId: Number(projectId) };
         resDB = await t.oneOrNone(sql, sqlParams);
         if (!resDB) {
-          return res(401).json({ error: "Wrong user != project" });
+          return res(403).json({ error: "Wrong user != project" });
         }
       });
     }
 
-    const db = req.app.locals.db;
     let resDB = [];
     await db.tx(async (t) => {
       t.none(req.app.locals.schema_query);
@@ -174,7 +183,7 @@ router.delete("/:projectId", async (req, res) => {
   try {
     const authHeader = req.user;
     if (!authHeader) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(403).json({ error: "Invalid credentials" });
     }
     const { projectId } = req.params;
     const { login, role } = authHeader;
@@ -188,7 +197,7 @@ router.delete("/:projectId", async (req, res) => {
         const sqlParams = { login, projectId: Number(projectId) };
         resDB = await t.oneOrNone(sql, sqlParams);
         if (!resDB) {
-          return res(401).json({ error: "Wrong user != project" });
+          return res(403).json({ error: "Wrong user != project" });
         }
       });
     }
@@ -210,6 +219,7 @@ router.delete("/:projectId", async (req, res) => {
   }
 });
 
+router.use("/:projectId/views", routerViews);
 router.use("/:projectId/likes", routerLikes);
 router.use("/:projectId/saves", routerSaves);
 router.use("/:projectId/comments", routerComments);

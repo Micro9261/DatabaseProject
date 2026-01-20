@@ -30,7 +30,7 @@ router.post("/", async (req, res) => {
   try {
     const authHeader = req.user;
     if (!authHeader) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(403).json({ error: "Invalid credentials" });
     }
     const { threadId } = req.params;
     const { login } = authHeader;
@@ -56,7 +56,7 @@ router.delete("/", async (req, res) => {
   try {
     const authHeader = req.user;
     if (!authHeader) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(403).json({ error: "Invalid credentials" });
     }
     const { threadId } = req.params;
     const { login } = authHeader;

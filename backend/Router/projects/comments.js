@@ -43,7 +43,7 @@ router.post("/", async (req, res) => {
   try {
     const authHeader = req.user;
     if (!authHeader) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(403).json({ error: "Invalid credentials" });
     }
     const { projectId } = req.params;
     const { login } = authHeader;
@@ -65,7 +65,8 @@ router.post("/", async (req, res) => {
         "SELECT * FROM add_project_comment(${projectId}, ${parentId}, ${login}, ${content})";
       const sqlParams = {
         projectId: Number(projectId),
-        parentId: parentId !== undefined ? Number(parentId) : null,
+        parentId:
+          parentId !== undefined && parentId !== null ? Number(parentId) : null,
         login,
         content,
       };
@@ -84,7 +85,7 @@ router.delete("/", async (req, res) => {
   try {
     const authHeader = req.user;
     if (!authHeader && authHeader.role == "user") {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(403).json({ error: "Invalid credentials" });
     }
     const { projectId } = req.params;
 
@@ -139,7 +140,7 @@ router.patch("/:commentId", async (req, res) => {
   try {
     const authHeader = req.user;
     if (!authHeader) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(403).json({ error: "Invalid credentials" });
     }
     const { projectId, commentId } = req.params;
     const { login, role } = authHeader;
@@ -148,12 +149,13 @@ router.patch("/:commentId", async (req, res) => {
       return res.status(500).json({ error: "Invalid arguments undefined" });
     }
 
+    const db = req.app.locals.db;
     if (role == "user") {
       let resDB = [];
       await db.tx(async (t) => {
         t.none(req.app.locals.schema_query);
         const sql =
-          "SELECT * FROM projects_comments_info pci WHERE pci.author = ${login} AND pci.project_id = ${projectId} AND pci.comm_id = ${commentId}";
+          "SELECT * FROM projects_comments_info pci WHERE pci.author = ${login} AND pci.project_id = ${projectId} AND pci.project_comm_id = ${commentId}";
         const sqlParams = {
           login,
           projectId: Number(projectId),
@@ -161,12 +163,11 @@ router.patch("/:commentId", async (req, res) => {
         };
         resDB = await t.oneOrNone(sql, sqlParams);
         if (!resDB) {
-          return res(401).json({ error: "Wrong user != project" });
+          return res(403).json({ error: "Wrong user != project" });
         }
       });
     }
 
-    const db = req.app.locals.db;
     let resDB = [];
     await db.tx(async (t) => {
       t.none(req.app.locals.schema_query);
@@ -188,7 +189,7 @@ router.delete("/:commentId", async (req, res) => {
   try {
     const authHeader = req.user;
     if (!authHeader) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(403).json({ error: "Invalid credentials" });
     }
     const { projectId, commentId } = req.params;
     const { login, role } = authHeader;
@@ -206,7 +207,7 @@ router.delete("/:commentId", async (req, res) => {
         };
         resDB = await t.oneOrNone(sql, sqlParams);
         if (!resDB) {
-          return res(401).json({ error: "Wrong user != project" });
+          return res(403).json({ error: "Wrong user != project" });
         }
       });
     }

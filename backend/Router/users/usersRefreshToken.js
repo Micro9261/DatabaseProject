@@ -8,7 +8,7 @@ const router = express.Router();
 router.post("/", async (req, res) => {
   const cookies = req.cookies;
   if (!cookies.refresh_token) {
-    return res.status(401).json({ message: "Refresh token required" });
+    return res.status(403).json({ message: "Refresh token required" });
   }
   const { refresh_token } = cookies;
   const refreshToken = refresh_token.split(" ")[1];
@@ -28,7 +28,7 @@ router.post("/", async (req, res) => {
     } catch (err) {
       console.log(err);
       return res
-        .status(401)
+        .status(403)
         .json({ error: "Invalid or expired refresh token" });
     }
     const expire_time = dbRefreshToken.expire_time;

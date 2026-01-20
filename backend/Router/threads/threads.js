@@ -9,6 +9,7 @@ router.use(authenticateJWT);
 import routerComments from "./comments.js";
 import routerLikes from "./threadLikes.js";
 import routerSaves from "./threadSaves.js";
+import routerViews from "./threadViews.js";
 
 /*******************  /threads *********************/
 
@@ -43,7 +44,7 @@ router.get("/", async (req, res) => {
         ["asc", "desc"].includes(order.toLowerCase()):
         await db.tx(async (t) => {
           t.none(req.app.locals.schema_query);
-          const sql = `SELECT * FROM top_threads tt ORDER BY tt.score ${order} LIMIT ${top}`;
+          const sql = `SELECT * FROM threads_info tt ORDER BY tt.score ${order} LIMIT ${top}`;
           const sqlParams = { top: Number(top) };
           resDB = await t.any(sql, sqlParams);
         });
@@ -58,7 +59,7 @@ router.get("/", async (req, res) => {
         await db.tx(async (t) => {
           t.none(req.app.locals.schema_query);
           const sql =
-            "SELECT * FROM top_threads tt ORDER BY tt.score LIMIT 100";
+            "SELECT * FROM threads_info tt ORDER BY tt.create_date LIMIT 100";
           const sqlParams = { top, order };
           resDB = await t.any(sql, sqlParams);
         });
@@ -75,7 +76,7 @@ router.post("/", async (req, res) => {
   try {
     const authHeader = req.user;
     if (!authHeader) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(403).json({ error: "Invalid credentials" });
     }
     const { login } = authHeader;
     const { title, content } = req.body;
@@ -130,7 +131,7 @@ router.patch("/:threadId", async (req, res) => {
   try {
     const authHeader = req.user;
     if (!authHeader) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(403).json({ error: "Invalid credentials" });
     }
     const { threadId } = req.params;
     const { login, role } = authHeader;
@@ -139,6 +140,7 @@ router.patch("/:threadId", async (req, res) => {
       return res.status(500).json({ error: "Invalid arguments undefined" });
     }
 
+    const db = req.app.locals.db;
     if (role == "user") {
       let resDB = [];
       await db.tx(async (t) => {
@@ -148,12 +150,11 @@ router.patch("/:threadId", async (req, res) => {
         const sqlParams = { login, threadId: Number(threadId) };
         resDB = await t.oneOrNone(sql, sqlParams);
         if (!resDB) {
-          return res(401).json({ error: "Wrong user != project" });
+          return res(403).json({ error: "Wrong user != project" });
         }
       });
     }
 
-    const db = req.app.locals.db;
     let resDB = [];
     await db.tx(async (t) => {
       t.none(req.app.locals.schema_query);
@@ -174,7 +175,7 @@ router.delete("/:threadId", async (req, res) => {
   try {
     const authHeader = req.user;
     if (!authHeader) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(403).json({ error: "Invalid credentials" });
     }
     const { threadId } = req.params;
     const { login, role } = authHeader;
@@ -188,7 +189,7 @@ router.delete("/:threadId", async (req, res) => {
         const sqlParams = { login, threadId: Number(threadId) };
         resDB = await t.oneOrNone(sql, sqlParams);
         if (!resDB) {
-          return res(401).json({ error: "Wrong user != project" });
+          return res(403).json({ error: "Wrong user != project" });
         }
       });
     }
@@ -210,6 +211,7 @@ router.delete("/:threadId", async (req, res) => {
   }
 });
 
+router.use("/:threadId/views", routerViews);
 router.use("/:threadId/likes", routerLikes);
 router.use("/:threadId/saves", routerSaves);
 router.use("/:threadId/comments", routerComments);

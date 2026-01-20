@@ -69,7 +69,7 @@ router.get("/", async (req, res) => {
   try {
     const userAuth = req.user;
     if (!userAuth) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(403).json({ message: "Invalid credentials" });
     }
 
     const { login, role } = userAuth;
@@ -136,7 +136,7 @@ router.get("/", async (req, res) => {
             console.log("default");
         }
       } else {
-        return res.status(401).json({ message: "invalid credentials" });
+        return res.status(403).json({ message: "invalid credentials" });
       }
       res.status(201).json(resDB);
     } catch (err) {
@@ -155,7 +155,7 @@ router.get("/:loginP", async (req, res) => {
   try {
     const authHeader = req.user;
     if (!authHeader) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(403).json({ error: "Invalid credentials" });
     }
 
     const { role } = authHeader;
@@ -168,7 +168,7 @@ router.get("/:loginP", async (req, res) => {
         const sqlParams = { login };
         resDB = await t.oneOrNone(sql, sqlParams);
         if (!resDB) {
-          return res(401).json({ error: "Wrong user!" });
+          return res(403).json({ error: "Wrong user!" });
         }
       });
     } else {
@@ -196,12 +196,12 @@ router.patch("/:loginP", async (req, res) => {
   try {
     const authHeader = req.user;
     if (!authHeader) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(403).json({ error: "Invalid credentials" });
     }
 
     const body = req.body;
     if (!body) {
-      return res.status(401).json("Not body provided");
+      return res.status(403).json("Not body provided");
     }
 
     const { loginP } = req.params;
@@ -216,7 +216,7 @@ router.patch("/:loginP", async (req, res) => {
         const sqlParams = { login };
         resDB = await t.oneOrNone(sql, sqlParams);
         if (!resDB) {
-          return res(401).json({ error: "Wrong user!" });
+          return res(403).json({ error: "Wrong user!" });
         }
       });
     } else {
@@ -264,7 +264,7 @@ router.delete("/:loginP", async (req, res) => {
   try {
     const authHeader = req.user;
     if (!authHeader) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      return res.status(403).json({ error: "Invalid credentials" });
     }
 
     const { role } = authHeader;
@@ -277,7 +277,7 @@ router.delete("/:loginP", async (req, res) => {
         const sqlParams = { login };
         resDB = await t.oneOrNone(sql, sqlParams);
         if (!resDB) {
-          return res(401).json({ error: "Wrong user!" });
+          return res(403).json({ error: "Wrong user!" });
         }
       });
     } else {

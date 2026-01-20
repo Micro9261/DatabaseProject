@@ -1,51 +1,69 @@
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
-
-import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { MainPage } from "./pages/MainPage";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { ProjectPage } from "./pages/ProjectPage";
+import { ProjectsPage } from "./pages/ProjectsPage";
 import { ThreadsPage } from "./pages/ThreadsPage";
 import { ThreadPage } from "./pages/ThreadPage";
-import { ProjectsPage } from "./pages/ProjectsPage";
-import { ProjectPage } from "./pages/ProjectPage";
-import { Settings } from "./pages/Settings";
-import { Statistics } from "./pages/Statistics";
-import { ErrorPage } from "./pages/ErrorPage";
+import { registerAction, RegisterPage } from "./pages/RegisterPage";
+import { loginAction, LoginPage } from "./pages/LoginPage";
+import { StatisticsPage } from "./pages/Statistics";
+import { SettingsPage } from "./pages/Settings";
+import { AuthProvider } from "./Context/AuthContext";
 
 const router = createBrowserRouter([
   {
     path: "/",
     element: <MainPage />,
-    errorElement: <ErrorPage />,
   },
   {
-    path: "/threads",
-    element: <ThreadsPage />,
-  },
-  {
-    path: "/thread",
-    element: <ThreadPage />,
-  },
-  {
-    path: "/projects",
+    path: "/Projects",
     element: <ProjectsPage />,
+    children: [
+      { index: true, element: <div>index</div> },
+      {
+        path: "/Projects/:ProjectId",
+        element: <ProjectPage />,
+      },
+    ],
   },
   {
-    path: "/project",
-    element: <ProjectPage />,
+    path: "/Threads",
+    element: <ThreadsPage />,
+    children: [
+      { index: true, element: <div>index</div> },
+      {
+        path: "/Threads/:ThreadsId",
+        element: <ThreadPage />,
+      },
+    ],
   },
   {
-    path: "/settings",
-    element: <Settings />,
+    path: "/Login",
+    element: <LoginPage />,
+    action: loginAction,
   },
   {
-    path: "/statistics",
-    element: <Statistics />,
+    path: "/Register",
+    element: <RegisterPage />,
+    action: registerAction,
+  },
+  {
+    path: "/Statistics",
+    element: <StatisticsPage />,
+  },
+  {
+    path: "/Settings",
+    element: <SettingsPage />,
   },
 ]);
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <RouterProvider router={router} />
-  </StrictMode>
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
+  </StrictMode>,
 );
