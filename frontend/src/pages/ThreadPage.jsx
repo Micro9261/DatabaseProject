@@ -1,12 +1,13 @@
 import { ThreadCommentList } from "../components/ThreadCommentList";
 import { ProjectInfo } from "../components/ProjectInfo";
-import { useParams } from "react-router-dom";
+import { useOutletContext, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useFetchWithAuth } from "../utils/fetchData";
 
 export function ThreadPage() {
   const { ThreadsId } = useParams();
   const fetchWithAuth = useFetchWithAuth();
+  const { refreshSummary } = useOutletContext();
 
   const [thread, setThread] = useState(null);
   const [comments, setComments] = useState([]);
@@ -70,6 +71,7 @@ export function ThreadPage() {
 
       if (response.ok) {
         await refetchData();
+        refreshSummary();
         console.log("Thread comment update successfully");
       } else {
         const errorData = await response.json();
@@ -90,6 +92,7 @@ export function ThreadPage() {
       if (response.ok) {
         console.log("Thread comment add successfully");
         await refetchData();
+        refreshSummary();
       } else {
         const errorData = await response.json();
         console.log("Failed updating project: ", errorData);

@@ -1,8 +1,6 @@
 import styled from "styled-components";
 import { ThreadSummary } from "./ThreadSummary";
 import { NavLink } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { useFetchWithAuth } from "../utils/fetchData";
 
 const StyledList = styled.ul`
   display: flex;
@@ -27,28 +25,7 @@ const StyledNavLink = styled(NavLink)`
   }
 `;
 
-export function ThreadSummaryList() {
-  const [threads, setThreads] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const fetchWithAuth = useFetchWithAuth();
-
-  useEffect(() => {
-    const getThreads = async () => {
-      try {
-        const res = await fetchWithAuth("/Threads");
-        if (res.ok) {
-          const data = await res.json();
-          setThreads(data);
-        }
-      } catch (error) {
-        console.log("Failed to fetch threads", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    getThreads();
-  }, []);
-
+export function ThreadSummaryList({ threads = [], loading }) {
   if (loading) return <div>Loading projects...</div>;
 
   return (
@@ -66,7 +43,7 @@ export function ThreadSummaryList() {
               date={project.create_date}
               comments={project.comments}
               views={project.views}
-              likes={project.views}
+              likes={project.likes}
               saves={project.saves}
               setLike={true}
               setSave={false}

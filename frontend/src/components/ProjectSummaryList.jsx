@@ -1,8 +1,6 @@
 import styled from "styled-components";
 import { ProjectSummary } from "./ProjectSummary";
 import { NavLink } from "react-router-dom";
-import { useFetchWithAuth } from "../utils/fetchData";
-import { useEffect, useState } from "react";
 
 const StyledList = styled.ul`
   display: flex;
@@ -27,28 +25,7 @@ const StyledNavLink = styled(NavLink)`
   }
 `;
 
-export function ProjectSummaryList() {
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const fetchWithAuth = useFetchWithAuth();
-
-  useEffect(() => {
-    const getProjects = async () => {
-      try {
-        const res = await fetchWithAuth("/Projects");
-        if (res.ok) {
-          const data = await res.json();
-          setProjects(data);
-        }
-      } catch (error) {
-        console.log("Failed to fetch projects", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    getProjects();
-  }, []);
-
+export function ProjectSummaryList({ projects = [], loading }) {
   if (loading) return <div>Loading projects...</div>;
 
   return (
@@ -66,7 +43,7 @@ export function ProjectSummaryList() {
               date={project.create_date}
               comments={project.comments}
               views={project.views}
-              likes={project.views}
+              likes={project.likes}
               saves={project.saves}
               setLike={true}
               setSave={false}

@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom";
+import { useOutletContext, useParams } from "react-router-dom";
 import { ProjectCommentList } from "../components/ProjectCommentList";
 import { ProjectInfo } from "../components/ProjectInfo";
 import { useFetchWithAuth } from "../utils/fetchData";
@@ -8,6 +8,7 @@ export function ProjectPage() {
   // console.log(params.ProjectId);
   const { ProjectId } = useParams();
   const fetchWithAuth = useFetchWithAuth();
+  const { refreshSummary } = useOutletContext();
 
   const [project, setProject] = useState(null);
   const [comments, setComments] = useState([]);
@@ -73,6 +74,7 @@ export function ProjectPage() {
       if (response.ok) {
         console.log("Project comment update successfully");
         await refetchData();
+        refreshSummary();
       } else {
         const errorData = await response.json();
         console.log("Failed updating project: ", errorData);
@@ -92,6 +94,7 @@ export function ProjectPage() {
       if (response.ok) {
         console.log("Project comment add successfully");
         await refetchData();
+        refreshSummary();
       } else {
         const errorData = await response.json();
         console.log("Failed updating project: ", errorData);
