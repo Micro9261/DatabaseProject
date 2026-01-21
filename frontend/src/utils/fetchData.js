@@ -1,7 +1,7 @@
 import { useAuth } from "../Context/AuthContext";
 
 export function createFetchWithAuth({ accessToken, setAccessToken, logout }) {
-  const baseURL = "http://localhost:3000/api";
+  const baseURL = "https://databaseproject-gdlf.onrender.com/api";
 
   return async function fetchWithAut(
     url,

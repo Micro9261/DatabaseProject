@@ -118,12 +118,15 @@ export async function loginAction({ request }) {
   };
 
   try {
-    const response = await fetch("http://localhost:3000/api/users/login", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
+    const response = await fetch(
+      "https://databaseproject-gdlf.onrender.com/api/users/login",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
 
     const data = await response.json();
 
