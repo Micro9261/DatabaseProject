@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import { MainPage } from "./pages/MainPage";
-import { createHashRouter, RouterProvider } from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { ProjectPage } from "./pages/ProjectPage";
 import { ProjectsPage } from "./pages/ProjectsPage";
 import { ThreadsPage } from "./pages/ThreadsPage";
@@ -15,7 +15,7 @@ import { AuthProvider } from "./Context/AuthContext";
 import { CreateProjectPage } from "./pages/CreateProjectPage";
 import { CreateThreadPage } from "./pages/CreateThreadPage";
 
-const router = createHashRouter([
+const router = createBrowserRouter([
   {
     path: "/",
     element: <MainPage />,
@@ -26,11 +26,11 @@ const router = createHashRouter([
     children: [
       { index: true, element: <div>index</div> },
       {
-        path: ":ProjectId",
+        path: "/Projects/:ProjectId",
         element: <ProjectPage />,
       },
       {
-        path: "create",
+        path: "/Projects/create",
         element: <CreateProjectPage />,
       },
     ],
@@ -41,11 +41,11 @@ const router = createHashRouter([
     children: [
       { index: true, element: <div>index</div> },
       {
-        path: ":ThreadsId",
+        path: "/Threads/:ThreadsId",
         element: <ThreadPage />,
       },
       {
-        path: "create",
+        path: "/Threads/create",
         element: <CreateThreadPage />,
       },
     ],
