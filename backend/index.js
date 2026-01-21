@@ -49,7 +49,9 @@ app.locals.db = db;
 app.use(cookieParser());
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: (origin, callback) => {
+      callback(null, true);
+    },
     methods: ["POST", "PUT", "GET", "OPTIONS", "HEAD", "PATCH", "DELETE"],
     credentials: true,
   }),
