@@ -139,7 +139,7 @@ export async function initDatabase(db, schema, loadTestData) {
     if (loadTestData) {
       const initTestDataSqlFile = path.join(
         process.cwd(),
-        "Database\\InitTestData.sql",
+        "Database/InitTestData.sql",
       );
 
       const salt = Number(process.env.SALT);
@@ -188,7 +188,7 @@ export async function initDatabase(db, schema, loadTestData) {
 export async function deleteDatabase(db, schema) {
   const deleteDbSqlFile = path.join(
     process.cwd(),
-    "Database\\DeleteDatabase.sql",
+    "Database/DeleteDatabase.sql",
   );
   try {
     const dropSchema = "DROP SCHEMA IF EXISTS $1:name CASCADE";
