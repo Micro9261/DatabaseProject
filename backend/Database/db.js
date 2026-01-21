@@ -90,25 +90,25 @@ const users = [
 export async function initDatabase(db, schema, loadTestData) {
   const createTableSqlFile = path.join(
     process.cwd(),
-    "Database\\CreateTables.sql"
+    "Database/CreateTables.sql",
   );
   const createFunctionsSqlFile = path.join(
     process.cwd(),
-    "Database\\CreateFunctions.sql"
+    "Database/CreateFunctions.sql",
   );
   const createTriggerSqlFile = path.join(
     process.cwd(),
-    "Database\\CreateTriggers.sql"
+    "Database/CreateTriggers.sql",
   );
   const createViewSqlFile = path.join(
     process.cwd(),
-    "Database\\CreateViews.sql"
+    "Database/CreateViews.sql",
   );
   const createFunctionsAfterViewsSqlFile = path.join(
     process.cwd(),
-    "Database\\CreateFunctionsAfterViews.sql"
+    "Database/CreateFunctionsAfterViews.sql",
   );
-  const loadDataSqlFile = path.join(process.cwd(), "Database\\LoadData.sql");
+  const loadDataSqlFile = path.join(process.cwd(), "Database/LoadData.sql");
 
   const executeSql = [
     createTableSqlFile,
@@ -139,7 +139,7 @@ export async function initDatabase(db, schema, loadTestData) {
     if (loadTestData) {
       const initTestDataSqlFile = path.join(
         process.cwd(),
-        "Database\\InitTestData.sql"
+        "Database\\InitTestData.sql",
       );
 
       const salt = Number(process.env.SALT);
@@ -188,7 +188,7 @@ export async function initDatabase(db, schema, loadTestData) {
 export async function deleteDatabase(db, schema) {
   const deleteDbSqlFile = path.join(
     process.cwd(),
-    "Database\\DeleteDatabase.sql"
+    "Database\\DeleteDatabase.sql",
   );
   try {
     const dropSchema = "DROP SCHEMA IF EXISTS $1:name CASCADE";

@@ -19,13 +19,17 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 const pgp = pg();
-const db = pgp({
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  database: process.env.DB_NAME,
-});
+const db = pgp(process.env.DB_URL);
+//{
+// user: process.env.DB_USER,
+// password: process.env.DB_PASSWORD,
+// host: process.env.DB_HOST,
+// port: process.env.DB_PORT,
+// database: process.env.DB_NAME,
+
+//   //}
+//   process.env.DB_URL
+// );
 
 //Database operations
 const schema = process.env.SCHEMA;
